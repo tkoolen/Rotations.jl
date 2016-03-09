@@ -7,7 +7,7 @@
 
 
 @doc """
-	Equivilent arbitrary axis rotation angle for a quaternion
+    Equivilent arbitrary axis rotation angle for a quaternion
 """ ->
 rot_angle(q::Quaternion) = 2 * acos(q.s)
 
@@ -29,12 +29,12 @@ function mean(Qarray::Vector{Quaternion}, method::Integer = 0)
 
     if (method == 0)
         M = zeros(4, 4)
-		for i = 1:length(Qarray)
-			Qi = convert(Vector{Float64}, Qarray[i])      # convert types to ensure we don't get quaternion multiplication
-			M[:,:] += Qi * (Qi')
-		end
+        for i = 1:length(Qarray)
+            Qi = convert(Vector{Float64}, Qarray[i])      # convert types to ensure we don't get quaternion multiplication
+            M[:,:] += Qi * (Qi')
+        end
         evec = eigfact(Symmetric(M), 4:4)
-		Qbar = Quaternion(evec.vectors[1], evec.vectors[2], evec.vectors[3], evec.vectors[4], true)
+        Qbar = Quaternion(evec.vectors[1], evec.vectors[2], evec.vectors[3], evec.vectors[4], true)
     else
         error("I haven't coded this")
     end

@@ -1,7 +1,7 @@
 module Rotations
 
 using FixedSizeArrays
-using Quaternions
+using Quaternions  # TODO: Switch to the UnitQuaternions package? https://github.com/kam3k/UnitQuaternions.jl
 
 import Base.convert, Base.mean, Base.eltype, Base.isnan, Base.length, Base.call, Base.getindex
 import Quaternions.Quaternion
@@ -9,34 +9,36 @@ import Quaternions.Quaternion
 
 export
 
-	   # Euler angle ordering 
-	   EulerOrder,
-	   EulerZXY,
+        # Euler angle ordering 
+        EulerOrder,
+        EulerZXY,
 
-	   # representations
-	   RotMatrix,  
-	   SpQuat,     
-	   AngleAxis,  
-	   EulerAngles,  # order is in the type specification
+        # representations
+        RotMatrix,  
+        SpQuat,     
+        AngleAxis,  
+        EulerAngles,         # order is in the type specification
+        ProperEulerAngles,   # order is in the type specification
 
-	   # to convert between representations
-	   convert_rotation,
+        # quaternions as well
+        Quaternion,
 
-	   # check validity of the rotation
-	   valid_rotation,
+        # to convert between representations
+        convert_rotation,
 
-       # extra quaternion operations
-       mean, rot_angle,
+        # check validity of the rotation
+        valid_rotation,
 
-       # Misc
-       projective                              # convert a rotation matrix into a transformation matrix
+        # extra quaternion operations
+        rot_angle,  # N.B. angle(Quaternions) is different and defined in Quaternions
+
+        # Misc
+        projective                              # convert a rotation matrix into a transformation matrix
 
 
-src_files = ["rotation_types", "euler_types", "fsa_helpers", "type_methods", "rotation_conversions", "euler_conversions", "quaternion_ops"]
-
+src_files = ["rotation_types", "fsa_helpers", "type_methods", "rotation_conversions", "euler_conversions", "quaternion_ops", "rot_covariances"]
 for file in src_files 
-	println(file)
-	include("$(file).jl")
+    include("$(file).jl")
 end
 
 end # end rotations
