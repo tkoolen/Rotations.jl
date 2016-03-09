@@ -1,71 +1,214 @@
-###################################################
+# File created: 08-Mar-2016 15:00:09
+# using Matlab 2013b with Symbolic Math Toolbox version 5.11
+
+
+
+using FixedSizeArrays
+
+##############################
 # Euler Representations
-###################################################
+##############################
 
 
-@doc """
-EulerOrder specifies the extrinsic (axes of rotation are fixed) order of rotations.
-""" -> 
-abstract EulerOrder # for order of rotations
+"""
+EulerOrder specifies the extrinsic (axes of rotation are fixed) order of rotations
+"""
+abstract EulerOrder     # Defines the order of rotations
 
 
-# add other orders here
+#
+# tait-byran ordering
+#
+abstract TaitByranOrder   <: EulerOrder
 
-@doc """
+
+"""
+EulerZYX corresponds to:
+
+	Extrinsic: R = Rz(theta_z) * Ry(theta_y) * Rx(theta_x)
+
+or equivalently,
+
+	Intrinsic: R = Rx''(theta_x) * Ry'(theta_y) * Rz(theta_z) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerZYX <: TaitByranOrder end
+
+
+"""
 EulerZXY corresponds to:
 
-	Extrinsic: R = R(z) * R(x) * R(y)      
+	Extrinsic: R = Rz(theta_z) * Rx(theta_x) * Ry(theta_y)
 
-	or equivilently,
+or equivalently,
 
-    Intrinsic: R = R(y'') * R(x') * R(z)   (where axes of rotation inherit previous rotations)
-""" ->
-type EulerZXY <: EulerOrder end
+	Intrinsic: R = Ry''(theta_y) * Rx'(theta_x) * Rz(theta_z) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerZXY <: TaitByranOrder end
 
 
+"""
+EulerYZX corresponds to:
 
-@doc """
-EulerAngles{EulerOrder, T} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
+	Extrinsic: R = Ry(theta_y) * Rz(theta_z) * Rx(theta_x)
 
-Example: order EulerZXY corresponds to:
+or equivalently,
 
-	Extrinsic: R = R(z) * R(x) * R(y)      
+	Intrinsic: R = Rx''(theta_x) * Rz'(theta_z) * Ry(theta_y) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerYZX <: TaitByranOrder end
 
-	or equivilently,
 
-    Intrinsic: R = R(y'') * R(x') * R(z)   (where axes of rotation inherit previous rotations)
+"""
+EulerYXZ corresponds to:
 
-Check Rotation.EulerOrders for implemented orders
+	Extrinsic: R = Ry(theta_y) * Rx(theta_x) * Rz(theta_z)
 
-Notes:
+or equivalently,
 
-	The fields for of this structure (x,y,z) are setup for conceptual simplicity for Trait Bryan angles which
-	use rotationa each axes.  Proper Euler angles use repeat rotations about a single axis (e.g. EulerZXZ)
+	Intrinsic: R = Rz''(theta_z) * Rx'(theta_x) * Ry(theta_y) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerYXZ <: TaitByranOrder end
 
-""" ->
-immutable EulerAngles{Order <: EulerOrder, T <: Real} <: FixedVectorNoTuple{3, T}  # be nice to get quaternions in here
-	x::T
-	y::T
-	z::T
+
+"""
+EulerXYZ corresponds to:
+
+	Extrinsic: R = Rx(theta_x) * Ry(theta_y) * Rz(theta_z)
+
+or equivalently,
+
+	Intrinsic: R = Rz''(theta_z) * Ry'(theta_y) * Rx(theta_x) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerXYZ <: TaitByranOrder end
+
+
+"""
+EulerXZY corresponds to:
+
+	Extrinsic: R = Rx(theta_x) * Rz(theta_z) * Ry(theta_y)
+
+or equivalently,
+
+	Intrinsic: R = Ry''(theta_y) * Rz'(theta_z) * Rx(theta_x) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerXZY <: TaitByranOrder end
+
+
+#
+# proper-euler ordering
+#
+abstract ProperEulerOrder   <: EulerOrder
+
+
+"""
+EulerZYZ corresponds to:
+
+	Extrinsic: R = Rz(theta_1) * Ry(theta_2) * Rz(theta_3)
+
+or equivalently,
+
+	Intrinsic: R = Rz''(theta_3) * Ry'(theta_2) * Rz(theta_1) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerZYZ <: ProperEulerOrder end
+
+
+"""
+EulerZXZ corresponds to:
+
+	Extrinsic: R = Rz(theta_1) * Rx(theta_2) * Rz(theta_3)
+
+or equivalently,
+
+	Intrinsic: R = Rz''(theta_3) * Rx'(theta_2) * Rz(theta_1) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerZXZ <: ProperEulerOrder end
+
+
+"""
+EulerYZY corresponds to:
+
+	Extrinsic: R = Ry(theta_1) * Rz(theta_2) * Ry(theta_3)
+
+or equivalently,
+
+	Intrinsic: R = Ry''(theta_3) * Rz'(theta_2) * Ry(theta_1) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerYZY <: ProperEulerOrder end
+
+
+"""
+EulerYXY corresponds to:
+
+	Extrinsic: R = Ry(theta_1) * Rx(theta_2) * Ry(theta_3)
+
+or equivalently,
+
+	Intrinsic: R = Ry''(theta_3) * Rx'(theta_2) * Ry(theta_1) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerYXY <: ProperEulerOrder end
+
+
+"""
+EulerXYX corresponds to:
+
+	Extrinsic: R = Rx(theta_1) * Ry(theta_2) * Rx(theta_3)
+
+or equivalently,
+
+	Intrinsic: R = Rx''(theta_3) * Ry'(theta_2) * Rx(theta_1) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerXYX <: ProperEulerOrder end
+
+
+"""
+EulerXZX corresponds to:
+
+	Extrinsic: R = Rx(theta_1) * Rz(theta_2) * Rx(theta_3)
+
+or equivalently,
+
+	Intrinsic: R = Rx''(theta_3) * Rz'(theta_2) * Rx(theta_1) (where the axis of rotation inherits from previous rotations)
+"""
+type EulerXZX <: ProperEulerOrder end
+
+
+##############################
+# Euler (Tait Byran) Angles
+##############################
+
+
+"""
+EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
+See subtypes(Rotations.TaitByranOrder) for a list of possible orders
+
+Fields:
+	theta_x   - Angle to rotate about the x axis (radians)
+	theta_y   - Angle to rotate about the y axis (radians)
+	theta_z   - Angle to rotate about the z axis (radians)
+"""
+immutable EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+	theta_x::T
+	theta_y::T
+	theta_z::T
 end
 
-# a default ordering scheme
-DefaultEulerOrder = EulerZXY
 
-# get the order from the type
-eltype{Order <: EulerOrder, T}(::Type{EulerAngles{Order,T}}) = T
-euler_order{Order <: EulerOrder, T}(::Type{EulerAngles{Order,T}}) = Order
+##############################
+# Proper Euler Angles
+##############################
 
 
+"""
+ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
+See subtypes(Rotations.ProperEulerOrder) for a list of possible orders
 
-# define its interaction with other angle representations
-convert_rotation{RTYPE <: RotMatrix}(::Type{RTYPE}, ea::EulerAngles) = convert(RTYPE, eulertorot(ea))
-convert_rotation{EA <: EulerAngles}(::Type{EA}, R::RotMatrix) = convert(add_params(EA, R), rottoeuler(EA, R))
-
-
-convert_rotation{ETYPE <: EulerAngles}(::Type{ETYPE}, R::RotMatrix) = convert(ETYPE, rottoeuler(ETYPE, R))
-convert_rotation{T}(::Type{T}, ea::EulerAngles) = convert_rotation(T, eulertorot(ea))  # go via the rotation representation
-
-# allow convert_rotation to also convert element types (its convenient)
-convert_rotation{ORD <: EulerOrder, T <: Real}(::Type{EulerAngles{ORD,T}}, ea::EulerAngles{ORD}) = convert(EulerAngles{ORD,T}, ea) 
-convert_rotation{ORD <: EulerOrder}(::Type{EulerAngles{ORD}}, ea::EulerAngles{ORD}) = ea  # no conversion needed                    
+Fields:
+	theta_1   - angle to rotate about the first axis in the order (radians)
+	theta_2   - angle to rotate about the second axis in the order (radians)
+	theta_3   - angle to rotate about the final axis in the order (radians)
+"""
+immutable ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+	theta_1::T
+	theta_2::T
+	theta_3::T
+end
