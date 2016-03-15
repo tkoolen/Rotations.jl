@@ -1,13 +1,14 @@
 # defines common methods for the various rotation types
 
-# It'd be nice if this was a abstract type
+
 RotTypeList    = [RotMatrix, Quaternion, SpQuat, EulerAngles, ProperEulerAngles, AngleAxis]
 Mat33Types     = [RotMatrix]
 Vec4Types      = [Quaternion, AngleAxis]
 Vec3Types      = [SpQuat, EulerAngles, ProperEulerAngles]
 
-RotationTypes  = Union{RotTypeList...}
 
+# It'd be nice if this was a abstract type...
+RotationTypes  = Union{RotTypeList...}
 
 
 #################################################################
@@ -22,10 +23,11 @@ promote_type_sp{T <: Real}(::Type{T}, ::Type{Any}) = T
 promote_type_sp(::Type{Any}, ::Type{Any}) = DefaultElType
 promote_type_sp{T <: Real, U <: Real}(::Type{T}, ::Type{U}) = promote_type(T, U)
 
+
+
 #####################################################
 # Worker macros
 #####################################################
-
 
 #
 # function to crate a code block to add parameter stuff when the type has only the element type as a parameter
@@ -168,7 +170,7 @@ end
 
 
 #
-# function to crate a code block to perform conversion to and from vector types
+# function to create a code block to perform conversion to and from vector types
 # 
 function conversions_V4(rot_type)  # for 4 element representations
     quote
@@ -312,11 +314,11 @@ end
 # 
 function add_nan_check(rot_type)
     if any(rot_type .== Vec4Types)
-        :(isnan(X::$(rot_type))  = any(@fsa_isnan_vec(X, 4)))
+        quote isnan(X::$(rot_type))  = any(@fsa_isnan_vec(X, 4)) end
     elseif any(rot_type .== Vec3Types)
-        :(isnan(X::$(rot_type))  = any(@fsa_isnan_vec(X, 3)))
+        quote isnan(X::$(rot_type))  = any(@fsa_isnan_vec(X, 3)) end
     elseif any(rot_type .== Mat33Types)
-        :(isnan(X::$(rot_type))  = any(@fsa_isnan(X, 3, 3)))
+        quote isnan(X::$(rot_type))  = any(@fsa_isnan(X, 3, 3)) end
     end
 end
 
@@ -345,25 +347,27 @@ end
 
 
 #
-# Add all methods ro a specific type
+# Add all methods for a specific type
 # 
-macro add_methods(rot_type)
+function add_methods(rot_type)
 
-    quote
-        
-        # add the parameter manipulation methods
-        eval(Rotations.add_param_functions($(rot_type)))
+    qb = quote end
 
-        # add the vector conversion code
-        eval(Rotations.add_vector_conversions($(rot_type)))
+    # add the parameter manipulation methods
+    append!(qb.args, Rotations.add_param_functions(rot_type).args)  
 
-        # the number of elements in the representation
-        eval(Rotations.add_nvars($(rot_type)))
+    # add the vector conversion code
+    append!(qb.args, Rotations.add_vector_conversions(rot_type).args)  
 
-        # NaN checks
-        eval(Rotations.add_nan_check($(rot_type)))
+    # the number of elements in the representation
+    append!(qb.args, Rotations.add_nvars(rot_type).args)  
 
-    end
+    # NaN checks
+    append!(qb.args, Rotations.add_nan_check(rot_type).args)
+
+    # return the code block
+    return qb
+
 end
 
 
@@ -373,7 +377,7 @@ end
 for t in RotTypeList
     #println(t)
     #println("n_params: $(n_params(t))")
-    @add_methods(t)
+    eval(add_methods(t))
 end
 
 
