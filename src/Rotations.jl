@@ -28,6 +28,7 @@ export
 
         # to convert between representations
         convert_rotation,
+        rotate_point,
 
         # check validity of the rotation
         valid_rotation,
@@ -39,7 +40,7 @@ export
         projective                              # convert a rotation matrix into a transformation matrix
 
 
-src_files = ["rotation_types", "fsa_helpers", "type_methods", "rotation_conversions", "euler_conversions", "quaternion_ops", "rot_covariances"]
+src_files = ["rotation_types", "fsa_helpers", "type_methods", "rotation_conversions", "euler_conversions", "rotate", "quaternion_ops", "rot_covariances"]
 for file in src_files 
     include("$(file).jl")
 end
