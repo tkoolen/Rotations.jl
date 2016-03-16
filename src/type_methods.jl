@@ -45,29 +45,29 @@ function param_functions1{rot_type}(::Type{rot_type})
         #
 
         # add the element type when it's not present
-        add_elltype(::Type{$(rot_type)}) = $(rot_type){$(def_element)}
+        add_eltype(::Type{$(rot_type)}) = $(rot_type){$(def_element)}
 
         # do nothing when it is present
-        add_elltype{T}(::Type{$(rot_type){T}}) = $(rot_type){T}
+        add_eltype{T}(::Type{$(rot_type){T}}) = $(rot_type){T}
 
         # add the element type from another source when it's not present
-        add_elltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
-        add_elltype{T}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){eltype(T)}
+        add_eltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
+        add_eltype{T}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){eltype(T)}
 
         # add the element type from another source when it is already present (ignore the other source)
-        add_elltype{T,U}(::Type{$(rot_type){T}}, ::Type{U}) = $(rot_type){T}
+        add_eltype{T,U}(::Type{$(rot_type){T}}, ::Type{U}) = $(rot_type){T}
 
         #
         # Stripping the element type
         #
-        strip_elltype(::Type{$(rot_type)}) = $(rot_type)
-        strip_elltype{T}(::Type{$(rot_type){T}}) = $(rot_type)
+        strip_eltype(::Type{$(rot_type)}) = $(rot_type)
+        strip_eltype{T}(::Type{$(rot_type){T}}) = $(rot_type)
 
         #
         # Adding all parameters
         #
-        add_params{T <: $(rot_type)}(::Type{T}) = add_elltype(T)                  # by itself
-        add_params{T <: $(rot_type), U}(::Type{T}, ::Type{U}) = add_elltype(T, U) # from another source
+        add_params{T <: $(rot_type)}(::Type{T}) = add_eltype(T)                  # by itself
+        add_params{T <: $(rot_type), U}(::Type{T}, ::Type{U}) = add_eltype(T, U) # from another source
         add_params{T <: $(rot_type), U}(::Type{T}, X::U) = add_params(T, U)       # from another source
 
         # output type with a promoted element types (N.B. should I call this something else
@@ -128,31 +128,31 @@ function param_functions2{rot_type}(::Type{rot_type})
         #
 
         # add the element type when it's not present
-        add_elltype{ORDER}(::Type{$(rot_type){ORDER}}) = $(rot_type){ORDER, $(def_element)}
+        add_eltype{ORDER}(::Type{$(rot_type){ORDER}}) = $(rot_type){ORDER, $(def_element)}
 
         # do nothing when it is present
-        add_elltype{ORDER, T}(::Type{$(rot_type){ORDER, T}}) = $(rot_type){ORDER, T}
+        add_eltype{ORDER, T}(::Type{$(rot_type){ORDER, T}}) = $(rot_type){ORDER, T}
 
         # add the element type from another source when it's not present 
-        add_elltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
-        add_elltype{ORDER, T}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, eltype(T)}
+        add_eltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
+        add_eltype{ORDER, T}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, eltype(T)}
 
         # add the element type from another source when it is already present (ignore the other source)
-        add_elltype{ORDER, T,U}(::Type{$(rot_type){ORDER, T}}, ::Type{U}) = $(rot_type){ORDER, T}
+        add_eltype{ORDER, T,U}(::Type{$(rot_type){ORDER, T}}, ::Type{U}) = $(rot_type){ORDER, T}
 
         #
         # Stripping the element type
         #
-        strip_elltype(::Type{$(rot_type)}) = $(rot_type)
-        strip_elltype{ORDER}(::Type{$(rot_type){ORDER}}) = $(rot_type){ORDER}
-        strip_elltype{ORDER, T}(::Type{$(rot_type){ORDER, T}}) = $(rot_type){ORDER}
+        strip_eltype(::Type{$(rot_type)}) = $(rot_type)
+        strip_eltype{ORDER}(::Type{$(rot_type){ORDER}}) = $(rot_type){ORDER}
+        strip_eltype{ORDER, T}(::Type{$(rot_type){ORDER, T}}) = $(rot_type){ORDER}
 
         #
         # Adding all parameters
         #
-        add_params{T <: $(rot_type)}(::Type{T}) = add_elltype(add_order(T)) 
-        add_params{T <: $(rot_type), U}(::Type{T}, ::Type{U}) = add_elltype(add_order(T), U)                   # eltype from another source
-        add_params{T <: $(rot_type), U <: $(rot_type)}(::Type{T}, ::Type{U}) = add_elltype(add_order(T, U), U) # order and eltype from another source
+        add_params{T <: $(rot_type)}(::Type{T}) = add_eltype(add_order(T)) 
+        add_params{T <: $(rot_type), U}(::Type{T}, ::Type{U}) = add_eltype(add_order(T), U)                   # eltype from another source
+        add_params{T <: $(rot_type), U <: $(rot_type)}(::Type{T}, ::Type{U}) = add_eltype(add_order(T, U), U) # order and eltype from another source
         add_params{T <: $(rot_type), U}(::Type{T}, X::U) = add_params(T, U)       # from another source
 
         # output type with a promoted element types

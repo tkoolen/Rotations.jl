@@ -8,7 +8,7 @@ using Rotations
 srand(0)
 
 
-numel{T <: Rotations.RotationTypes}(X::T) = Rotations.numel(Rotations.strip_elltype(T))
+numel{T <: Rotations.RotationTypes}(X::T) = Rotations.numel(Rotations.strip_eltype(T))
 numel{T}(X::T) = (T <: FixedSizeArrays.FixedArray) || (T <: FixedSizeArrays.AbstractArray)  ? length(X) : error("numel undefined for input of type $(T)") 
 
 # a macro to test if the contents of two containers are approximatley equal
