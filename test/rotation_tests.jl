@@ -7,7 +7,9 @@ using Rotations
 # reset this for testing
 srand(0)
 
-numel(X) = (isa(X, Vector) || isa(X, Vec) || isa(X, Matrix) || isa(X, Mat)) ? length(X) : Rotations.nvars(X)
+
+numel{T <: Rotations.RotationTypes}(X::T) = Rotations.numel(Rotations.strip_elltype(T))
+numel{T}(X::T) = (T <: FixedSizeArrays.FixedArray) || (T <: FixedSizeArrays.AbstractArray)  ? length(X) : error("numel undefined for input of type $(T)") 
 
 # a macro to test if the contents of two containers are approximatley equal
 macro contents_approx_eq(a, b)
@@ -78,7 +80,6 @@ null_rotation{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD, Floa
 R = RotMatrix(eye(3))
 # println("********************************\nIndentity checks\n********************************\n")
 for rt in rot_types
-    # println(rt)
     rot_var = rt(R)
     null_var = null_rotation(rt)
     @types_approx_eq(rot_var, null_var)
@@ -95,7 +96,7 @@ R = RotMatrix(eye(3))
 eltypes = subtypes(AbstractFloat)  # only abstarct floats are supported by all
 for rt in rot_types
 
-    # println("$(rt)")
+    #println("$(rt)")
     rot_var = rt(R)
     
     # export to immutable
@@ -118,8 +119,8 @@ for rt in rot_types
     for eT in eltypes
         
         # export to immutable
-        ivt = Vec{Rotations.nvars(rt), eT}(rot_var)
-        ivc = convert(Vec{Rotations.nvars(rt), eT}, ivu)
+        ivt = Vec{Rotations.numel(rt), eT}(rot_var)
+        ivc = convert(Vec{Rotations.numel(rt), eT}, ivu)
         @types_approx_eq(ivt, ivc)
     
         # export to mutable
