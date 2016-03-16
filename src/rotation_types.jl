@@ -1,7 +1,7 @@
 
 
 # a default element type
-DefaultElType = Float64
+macro DefaultElType(); Float64; end  # need this to be a macro for type stability in type_methods.jl promote_type_sp functions
 
 ###################################################
 # Rotation matrix (typeofalias of Mat{3,3,Float64})
@@ -32,7 +32,7 @@ Base.call{U}(::Type{RotMatrix}, mat::Matrix{U}) = convert(RotMatrix{U}, mat)
 convert_rotation{T, U}(::Type{RotMatrix{T}}, X::RotMatrix{U}) = convert(RotMatrix{T}, X)
 
 # default parameters
-default_params{T <: RotMatrix}(::Type{T}) = (DefaultElType, ) 
+default_params{T <: RotMatrix}(::Type{T}) = (@DefaultElType(), ) 
 
 
 ###################################################
@@ -66,7 +66,7 @@ convert{T}(::Type{Quaternion{T}}, X::Vec{3,T}) = Quaternion(T(0), X[1], X[2], X[
 convert{T, U}(::Type{Quaternion{T}}, X::Vec{3,U}) = Quaternion(T(0), T(X[1]), T(X[2]), T(X[3]))
 
 # default parameters
-default_params{T <: Quaternion}(::Type{T}) = (DefaultElType, ) 
+default_params{T <: Quaternion}(::Type{T}) = (@DefaultElType(), ) 
 
 
 
@@ -109,7 +109,7 @@ convert_rotation{T,U}(::Type{T}, spq::SpQuat{U}) = convert_rotation(T, spquattoq
 convert_rotation{T, U}(::Type{SpQuat{T}}, X::SpQuat{U}) = convert(SpQuat{T}, X)
 
 # default parameters
-default_params{T <: SpQuat}(::Type{T}) = (DefaultElType, )
+default_params{T <: SpQuat}(::Type{T}) = (@DefaultElType(), )
 
 
 
@@ -138,7 +138,7 @@ convert_rotation{T,U}(::Type{T}, aa::AngleAxis{U}) = convert_rotation(T, arbaxis
 convert_rotation{T, U}(::Type{AngleAxis{T}}, X::AngleAxis{U}) = convert(AngleAxis{T}, X)
 
 # default parameters
-default_params{T <: AngleAxis}(::Type{T}) = (DefaultElType, )
+default_params{T <: AngleAxis}(::Type{T}) = (@DefaultElType(), )
 
 # accessors
 rot_angle(aa::AngleAxis) = aa.theta  # named to match the quaternion equivilent
@@ -159,8 +159,8 @@ include("euler_types.jl")
 DefaultEulerOrder = EulerZXY       # there's no reason why this order was chosen as the default
 DefaultProperEulerOrder = EulerXZX # there's no reason why this order was chosen as the default
 
-default_params{T <: EulerAngles}(::Type{T}) = (DefaultEulerOrder, DefaultElType) 
-default_params{T <: ProperEulerAngles}(::Type{T}) = (DefaultProperEulerOrder, DefaultElType) # there's no reason why this order was chosen as the default
+default_params{T <: EulerAngles}(::Type{T}) = (DefaultEulerOrder, @DefaultElType()) 
+default_params{T <: ProperEulerAngles}(::Type{T}) = (DefaultProperEulerOrder, @DefaultElType()) # there's no reason why this order was chosen as the default
 
 # add default values to them
 #call(::Type{EulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles)(x,y,z)

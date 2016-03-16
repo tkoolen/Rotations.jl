@@ -22,9 +22,13 @@ n_params(::Type{RotMatrix})  = 1 # The behaviour of length(RotMatrix.parameters)
 #################################################################
 
 # special promote methods ignoring "Any" when promoting types
-promote_type_sp{T <: Real}(::Type{Any}, ::Type{T}) = T
-promote_type_sp{T <: Real}(::Type{T}, ::Type{Any}) = T
-promote_type_sp(::Type{Any}, ::Type{Any}) = DefaultElType
+promote_type_sp{T <: AbstractFloat}(::Type{Any}, ::Type{T}) = T
+promote_type_sp{T <: Real}(::Type{Any}, ::Type{T}) = @DefaultElType()  # we need a float type
+
+promote_type_sp{T <: AbstractFloat}(::Type{T}, ::Type{Any}) = T
+promote_type_sp{T <: Real}(::Type{T}, ::Type{Any}) = @DefaultElType()  # we need a float type
+
+promote_type_sp(::Type{Any}, ::Type{Any}) = @DefaultElType()
 promote_type_sp{T <: Real, U <: Real}(::Type{T}, ::Type{U}) = promote_type(T, U)
 
 
@@ -51,8 +55,9 @@ function param_functions1{rot_type}(::Type{rot_type})
         add_eltype{T}(::Type{$(rot_type){T}}) = $(rot_type){T}
 
         # add the element type from another source when it's not present
-        add_eltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
-        add_eltype{T}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){eltype(T)}
+        add_eltype{T <: AbstractFloat}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
+        add_eltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){$(def_element)}  # need a float
+        add_eltype{T}(::Type{$(rot_type)}, ::Type{T}) = add_eltype($(rot_type), eltype(T))
 
         # add the element type from another source when it is already present (ignore the other source)
         add_eltype{T,U}(::Type{$(rot_type){T}}, ::Type{U}) = $(rot_type){T}
@@ -134,8 +139,9 @@ function param_functions2{rot_type}(::Type{rot_type})
         add_eltype{ORDER, T}(::Type{$(rot_type){ORDER, T}}) = $(rot_type){ORDER, T}
 
         # add the element type from another source when it's not present 
-        add_eltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
-        add_eltype{ORDER, T}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, eltype(T)}
+        add_eltype{ORDER, T <: AbstractFloat}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
+        add_eltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, $(def_element)}  # need a float
+        add_eltype{ORDER, T}(::Type{$(rot_type){ORDER}}, ::Type{T}) = add_eltype($(rot_type){ORDER}, eltype(T))
 
         # add the element type from another source when it is already present (ignore the other source)
         add_eltype{ORDER, T,U}(::Type{$(rot_type){ORDER, T}}, ::Type{U}) = $(rot_type){ORDER, T}
@@ -182,9 +188,9 @@ function add_constructors(rot_type)
     input_expr = :(())   # build an expression for a tuple
     output_expr = :(())  # build an expression for a tuple
     for i = 1:numel(rot_type)
-        vi = symbol("x$(i)")
-        push!(input_expr.args, :($(vi)::Int))
-        push!(output_expr.args, :($(vi)))
+        xi = symbol("x$(i)")
+        push!(input_expr.args, :($(xi)::Int))
+        push!(output_expr.args, :($(xi)))
     end
 
     
@@ -215,11 +221,6 @@ end
 # 
 function add_vector_conversions(rot_type)  # for 4 element representations
 
-    # build expressions for the input and output tupples
-    output_expr = :(())  # build an expression for a tuple
-    append!(output_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
-
-
     # special case for building the mat type, we need a tuple for each column
     if (rot_type <: Mat)
         construct_expr = :(())
@@ -229,8 +230,21 @@ function add_vector_conversions(rot_type)  # for 4 element representations
             append!(col_expr.args, [:(T(X[$(i)])) for i in idx])
             push!(construct_expr.args, col_expr)
         end
+
+        # use indices not fieldnames to access members
+        output_expr = :(())  # build an expression for a tuple
+        append!(output_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
+
     else
-        construct_expr = output_expr
+        # grab from input vectors using an index
+        construct_expr = :(())
+        append!(construct_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
+
+        # use fieldnames to access members for exporting (I think its faster)
+        fields = fieldnames(rot_type)
+        output_expr = :(())  # build an expression for a tuple
+        append!(output_expr.args, [:(T(X.$(fields[i]))) for i in 1:numel(rot_type)])
+
     end
 
     quote
@@ -249,7 +263,7 @@ function add_vector_conversions(rot_type)  # for 4 element representations
 
         # convert from a fixed size a vector
         function convert{rT <: $(rot_type), U <: Real}(::Type{rT}, X::Vec{$(numel(rot_type)), U})
-            oT = add_params(rT, U <: AbstractFloat ? U : Any)                        # output type
+            oT = add_params(rT, U)                                                  # output type
             T = eltype(oT)                                                          # output element type
             oT($(construct_expr.args...))
         end
@@ -257,21 +271,21 @@ function add_vector_conversions(rot_type)  # for 4 element representations
         # convert from mutable vector
         function convert{rT <: $(rot_type), U <: Real}(::Type{rT}, X::Vector{U})
             (length(X)) == $(numel(rot_type)) || error(@sprintf("Input vector should have length %i", $(numel(rot_type))))
-            oT = add_params(rT, U <: AbstractFloat ? U : Any)
+            oT = add_params(rT, U)
             T = eltype(oT)
             oT($(construct_expr.args...))
+        end
+
+        # have to overload some call methods in FixedSizeArrays here...
+        if ($(rot_type) <: FixedSizeArrays.FixedArray)  
+            call{T <: $(rot_type), U <: Real}(::Type{T}, v::Vec{$(numel(rot_type)), U}) = convert(T, v)
+            call{T <: $(rot_type), U <: Real}(::Type{T}, v::Vector{U}) = convert(T, v)      
         end
 
         # Quaternions has a weird constructor 3 element vector constructor 
         if ($(rot_type) == Quaternion)
             # luckily the below will be called in preference to call{T}(::Type{Quaternion}, X::Vector)        
             call{T}(::Type{Quaternion}, X::Vector{T}) = length(X) == 4 ? convert(Quaternion, X) : (length(X) == 3 ? Quaternion(0, X[1], X[2], X[3]) : error("Vector should have 3 or 4 elements"))
-        elseif ($(rot_type) == RotMatrix)  
-
-            # have to overload some call methods in FixedSizeArrays here...
-            call{T <: $(rot_type), U <: Real}(::Type{T}, v::Vec{$(numel(rot_type)), U}) = convert(T, v)
-            call{T <: $(rot_type), U <: Real}(::Type{T}, v::Vector{U}) = convert(T, v)      
-
         end
     end
 end
