@@ -24,10 +24,46 @@ rotate_point{T <: AbstractFloat, U <: AbstractFloat}(R::RotMatrix{T}, X::Vec{3,U
 rotate_point{T <: AbstractFloat, U <: Integer}(R::RotMatrix{T}, X::Vec{3,U}) = R * convert(Vec{3, T}, X)
 
 
+#=
+
+################################################
+# Using Quaternions to do the rotation
+# (benchmark says not worth)
+################################################
+
+rotate_point{T <: AbstractFloat}(q::Quaternion{T}, X::Vector{T}) = imag(q*Quaternion(X)*conj(q))
+function rotate_point{T <: AbstractFloat}(q::Quaternion{T}, X::Vec{3,T}) 
+    qo = (q*Quaternion(X)*conj(q))
+    return Vec{3,T}(qo.v1, qo.v2, qo.v3)
+end
 
 
 
-# TODO: add methods for quaternions
+using Quaternions
+function benchmark_rotation(n::Int=1_000_000)
 
+    Qv = [nquatrand()::Quaternion{Float64} for i in 1:n]
 
+    X = Vec{3,Float64}(randn(3))
+    Xo = Vector{Vec{3,Float64}}(n)
+    
+    function quat_test!(Xo, Qv, X)
+        for (i, q) in enumerate(Qv)
+            Xo[i] = rotate_point(q, X)
+        end
+    end
 
+    function rot_test!(Xo, Qv, X)
+        for (i, q) in enumerate(Qv)
+            Xo[i] = rotate_point(RotMatrix(q), X)
+        end
+    end
+
+    println("Rotate via RotMatrix")
+    @time rot_test!(Xo, Qv, X)
+
+    println("Rotate via Quaternions")
+    @time quat_test!(Xo, Qv, X)
+
+end
+=#

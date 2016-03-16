@@ -87,7 +87,7 @@ function to convert a the stereographic projection of a unit quaternion back int
 """ ->
 function spquattoquat(spq::SpQuat)
     alpha2 = sum(spq .* spq)
-    q = Quaternion((1.0-alpha2) / (alpha2 + 1), 2*spq[1]   / (alpha2 + 1),   2*spq[2]  / (alpha2 + 1), 2*spq[3]   / (alpha2 + 1), true)
+    q = Quaternion((1.0-alpha2) / (alpha2 + 1), 2*spq[1]   / (alpha2 + 1),   2*spq[2]  / (alpha2 + 1), 2*spq[3] / (alpha2 + 1), true)  # its on the user if spq wasnt valid
     return q::Quaternion{Float64}
 end
 

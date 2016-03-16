@@ -6,7 +6,7 @@ module Rotations
 using FixedSizeArrays
 using Quaternions  # TODO: Switch to the UnitQuaternions package? https://github.com/kam3k/UnitQuaternions.jl
 
-import Base.convert, Base.mean, Base.eltype, Base.isnan, Base.length, Base.call, Base.getindex
+import Base.convert, Base.mean, Base.eltype, Base.isnan, Base.length, Base.call, Base.getindex, Base.inv, Base.*
 import Quaternions.Quaternion
 
 

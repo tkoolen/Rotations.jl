@@ -1,7 +1,7 @@
 
 
 # a default element type
-DefaultElType = Float64
+macro DefaultElType(); Float64; end  # need this to be a macro for type stability in type_methods.jl promote_type_sp functions
 
 ###################################################
 # Rotation matrix (typeofalias of Mat{3,3,Float64})
@@ -32,7 +32,7 @@ Base.call{U}(::Type{RotMatrix}, mat::Matrix{U}) = convert(RotMatrix{U}, mat)
 convert_rotation{T, U}(::Type{RotMatrix{T}}, X::RotMatrix{U}) = convert(RotMatrix{T}, X)
 
 # default parameters
-default_params{T <: RotMatrix}(::Type{T}) = (DefaultElType, ) 
+default_params{T <: RotMatrix}(::Type{T}) = (@DefaultElType(), ) 
 
 
 ###################################################
@@ -43,7 +43,6 @@ default_params{T <: RotMatrix}(::Type{T}) = (DefaultElType, )
 # element type is handy
 eltype(::Type{Quaternion}) = Any
 eltype{T}(::Type{Quaternion{T}}) = T
-
 
 # add an indexing scheme
 getindex(X::Quaternion, idx::Integer) = getfield(X, idx)
@@ -61,8 +60,13 @@ convert_rotation{T, U}(::Type{Quaternion{T}}, X::Quaternion{U}) = convert(Quater
 # more general
 convert_rotation{T,U}(::Type{T}, q::Quaternion{U}) = convert_rotation(T, quattorot(promote_eltype(q, eltype(T))))  # go via the rotation representation
 
+# allow construction from a 3 element fixed size array as well, idk about this but it can be done with a Vector so...
+convert{T}(::Type{Quaternion}, X::Vec{3,T}) = Quaternion(0, X[1], X[2], X[3])
+convert{T}(::Type{Quaternion{T}}, X::Vec{3,T}) = Quaternion(T(0), X[1], X[2], X[3])
+convert{T, U}(::Type{Quaternion{T}}, X::Vec{3,U}) = Quaternion(T(0), T(X[1]), T(X[2]), T(X[3]))
+
 # default parameters
-default_params{T <: Quaternion}(::Type{T}) = (DefaultElType, ) 
+default_params{T <: Quaternion}(::Type{T}) = (@DefaultElType(), ) 
 
 
 
@@ -84,7 +88,6 @@ See:
     http://www.tech.plymouth.ac.uk/sme/springerusv/2011/publications_files/Terzakis%20et%20al%202012,%20A%20Recipe%20on%20the%20Parameterization%20of%20Rotation%20Matrices...MIDAS.SME.2012.TR.004.pdf
 
     Note the singularity (origin) has been moved from [0,0,0,-1] in Ref[1] to [-1,0,0,0], so the 0 rotation quaternion [1,0,0,0] maps to [0,0,0] as opposed of to [1,0,0]. 
-    This is done because Spquats have 2 norm <= 1, so [1,0,0] lies on an inequality constraint
 
 """ ->
 immutable SpQuat{T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
@@ -105,7 +108,13 @@ convert_rotation{T,U}(::Type{T}, spq::SpQuat{U}) = convert_rotation(T, spquattoq
 convert_rotation{T, U}(::Type{SpQuat{T}}, X::SpQuat{U}) = convert(SpQuat{T}, X)
 
 # default parameters
-default_params{T <: SpQuat}(::Type{T}) = (DefaultElType, )
+default_params{T <: SpQuat}(::Type{T}) = (@DefaultElType(), )
+
+# define an inverse for the SPQuat since its trivial.  Inverse in the sense of the corresponding inverse rotation 
+inv(X::SpQuat) = SpQuat(-X.x, -X.y, -X.z) 
+
+# define multiplication for SpQuat corresponding to combining rotations
+*(lhs::SpQuat, rhs::SpQuat) = SpQuat(Quaternion(lhs) * Quaternion(rhs))
 
 
 
@@ -134,7 +143,7 @@ convert_rotation{T,U}(::Type{T}, aa::AngleAxis{U}) = convert_rotation(T, arbaxis
 convert_rotation{T, U}(::Type{AngleAxis{T}}, X::AngleAxis{U}) = convert(AngleAxis{T}, X)
 
 # default parameters
-default_params{T <: AngleAxis}(::Type{T}) = (DefaultElType, )
+default_params{T <: AngleAxis}(::Type{T}) = (@DefaultElType(), )
 
 # accessors
 rot_angle(aa::AngleAxis) = aa.theta  # named to match the quaternion equivilent
@@ -155,21 +164,21 @@ include("euler_types.jl")
 DefaultEulerOrder = EulerZXY       # there's no reason why this order was chosen as the default
 DefaultProperEulerOrder = EulerXZX # there's no reason why this order was chosen as the default
 
-default_params{T <: EulerAngles}(::Type{T}) = (DefaultEulerOrder, DefaultElType) 
-default_params{T <: ProperEulerAngles}(::Type{T}) = (DefaultProperEulerOrder, DefaultElType) # there's no reason why this order was chosen as the default
+default_params{T <: EulerAngles}(::Type{T}) = (DefaultEulerOrder, @DefaultElType()) 
+default_params{T <: ProperEulerAngles}(::Type{T}) = (DefaultProperEulerOrder, @DefaultElType()) # there's no reason why this order was chosen as the default
 
 # add default values to them
-call(::Type{EulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles)(x,y,z)
+#call(::Type{EulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles)(x,y,z)
 call(::Type{EulerAngles}, x::Real, y::Real, z::Real) = add_params(EulerAngles, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
 
-call(::Type{ProperEulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(ProperEulerAngles)(x,y,z)
+#call(::Type{ProperEulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(ProperEulerAngles)(x,y,z)
 call(::Type{ProperEulerAngles}, x::Real, y::Real, z::Real) = add_params(ProperEulerAngles, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
 
 # add some extra construction methods
-call{T <: TaitByranOrder}(::Type{EulerAngles{T}}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles{T})(x,y,z)
+#call{T <: TaitByranOrder}(::Type{EulerAngles{T}}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles{T})(x,y,z)
 call{T <: TaitByranOrder}(::Type{EulerAngles{T}}, x::Real, y::Real, z::Real) = add_params(EulerAngles{T}, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
 
-call{T <: ProperEulerOrder}(::Type{ProperEulerAngles{T}}, x::Integer, y::Integer, z::Integer) = add_params(ProperEulerAngles{T})(x,y,z)
+#call{T <: ProperEulerOrder}(::Type{ProperEulerAngles{T}}, x::Integer, y::Integer, z::Integer) = add_params(ProperEulerAngles{T})(x,y,z)
 call{T <: ProperEulerOrder}(::Type{ProperEulerAngles{T}}, x::Real, y::Real, z::Real) = add_params(ProperEulerAngles{T}, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
 
 
