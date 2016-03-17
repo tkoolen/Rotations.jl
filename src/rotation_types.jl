@@ -107,12 +107,14 @@ convert_rotation{T,U}(::Type{T}, spq::SpQuat{U}) = convert_rotation(T, spquattoq
 # allow converting element types
 convert_rotation{T, U}(::Type{SpQuat{T}}, X::SpQuat{U}) = convert(SpQuat{T}, X)
 
+# default parameters
+default_params{T <: SpQuat}(::Type{T}) = (@DefaultElType(), )
+
 # define an inverse for the SPQuat since its trivial.  Inverse in the sense of the corresponding inverse rotation 
 inv(X::SpQuat) = SpQuat(-X.x, -X.y, -X.z) 
 
-
-# default parameters
-default_params{T <: SpQuat}(::Type{T}) = (@DefaultElType(), )
+# define multiplication for SpQuat corresponding to combining rotations
+*(lhs::SpQuat, rhs::SpQuat) = SpQuat(Quaternion(lhs) * Quaternion(rhs))
 
 
 
