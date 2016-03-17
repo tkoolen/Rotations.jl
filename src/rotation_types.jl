@@ -88,7 +88,6 @@ See:
     http://www.tech.plymouth.ac.uk/sme/springerusv/2011/publications_files/Terzakis%20et%20al%202012,%20A%20Recipe%20on%20the%20Parameterization%20of%20Rotation%20Matrices...MIDAS.SME.2012.TR.004.pdf
 
     Note the singularity (origin) has been moved from [0,0,0,-1] in Ref[1] to [-1,0,0,0], so the 0 rotation quaternion [1,0,0,0] maps to [0,0,0] as opposed of to [1,0,0]. 
-    This is done because Spquats have 2 norm <= 1, so [1,0,0] lies on an inequality constraint
 
 """ ->
 immutable SpQuat{T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
@@ -107,6 +106,10 @@ convert_rotation{T,U}(::Type{T}, spq::SpQuat{U}) = convert_rotation(T, spquattoq
 
 # allow converting element types
 convert_rotation{T, U}(::Type{SpQuat{T}}, X::SpQuat{U}) = convert(SpQuat{T}, X)
+
+# define an inverse for the SPQuat since its trivial.  Inverse in the sense of the corresponding inverse rotation 
+inv(X::SpQuat) = SpQuat(-X.x, -X.y, -X.z) 
+
 
 # default parameters
 default_params{T <: SpQuat}(::Type{T}) = (@DefaultElType(), )
