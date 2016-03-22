@@ -176,6 +176,7 @@ type EulerXZX <: ProperEulerOrder end
 # Euler (Tait Byran) Angles
 ##############################
 
+macro DefaultEulerOrder(); EulerZXY; end
 
 """
 EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
@@ -186,7 +187,7 @@ Fields:
 	theta_y   - Angle to rotate about the y axis (radians)
 	theta_z   - Angle to rotate about the z axis (radians)
 """
-immutable EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+immutable EulerAngles{Order <: TaitByranOrder, T <: Real} 
 	theta_x::T
 	theta_y::T
 	theta_z::T
@@ -197,6 +198,7 @@ end
 # Proper Euler Angles
 ##############################
 
+macro DefaultProperEulerOrder(); EulerXZX; end
 
 """
 ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
@@ -207,7 +209,7 @@ Fields:
 	theta_2   - angle to rotate about the second axis in the order (radians)
 	theta_3   - angle to rotate about the final axis in the order (radians)
 """
-immutable ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+immutable ProperEulerAngles{Order <: ProperEulerOrder, T <: Real} 
 	theta_1::T
 	theta_2::T
 	theta_3::T

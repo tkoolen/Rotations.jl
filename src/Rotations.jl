@@ -40,7 +40,7 @@ export
         projective                              # convert a rotation matrix into a transformation matrix
 
 
-src_files = ["rotation_types", "fsa_helpers", "type_methods", "rotation_conversions", "euler_conversions", "rotate", "quaternion_ops", "rot_covariances"]
+src_files = ["rotation_types", "type_methods", "rotation_conversions", "euler_conversions", "rotate", "quaternion_ops", "rot_covariances"]
 for file in src_files 
     include("$(file).jl")
 end

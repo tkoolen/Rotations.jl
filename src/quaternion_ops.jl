@@ -9,7 +9,7 @@
 @doc """
     Equivilent arbitrary axis rotation angle for a quaternion
 """ ->
-rot_angle(q::Quaternion) = 2 * acos(q.s)
+rot_angle(q::Quaternion) = 2 * acos(Quaternions.normalize(q).s)
 
 
 @doc """
