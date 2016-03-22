@@ -14,9 +14,9 @@
 # EulerZYX
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerZYX,T}) = eulertorot(ea::EulerAngles{EulerZYX,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerZYX,T}) = euler_to_rot(ea::EulerAngles{EulerZYX,T})
 
-function eulertorot{T}(ea::EulerAngles{EulerZYX,T})
+function euler_to_rot{T}(ea::EulerAngles{EulerZYX,T})
 
 
 	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
@@ -29,7 +29,7 @@ function eulertorot{T}(ea::EulerAngles{EulerZYX,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZYX,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZYX,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
@@ -43,9 +43,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZYX,U})
 end
 
 
-rottoeuler{T}(::Type{EulerAngles{EulerZYX}}, R::RotMatrix{T}) = rottoeuler(EulerAngles{EulerZYX, T}, R)
+rot_to_euler{T}(::Type{EulerAngles{EulerZYX}}, R::RotMatrix{T}) = rot_to_euler(EulerAngles{EulerZYX, T}, R)
 
-function rottoeuler{T}(::Type{EulerAngles{EulerZYX,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{EulerAngles{EulerZYX,T}}, R::RotMatrix)
 
 	t1 = atan2(R[2, 1], R[1, 1])
 	ct1, st1 = cos(t1), sin(t1)
@@ -62,9 +62,9 @@ end
 # EulerZXY
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerZXY,T}) = eulertorot(ea::EulerAngles{EulerZXY,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerZXY,T}) = euler_to_rot(ea::EulerAngles{EulerZXY,T})
 
-function eulertorot{T}(ea::EulerAngles{EulerZXY,T})
+function euler_to_rot{T}(ea::EulerAngles{EulerZXY,T})
 
 
 	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
@@ -77,7 +77,7 @@ function eulertorot{T}(ea::EulerAngles{EulerZXY,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZXY,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZXY,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
@@ -91,9 +91,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZXY,U})
 end
 
 
-rottoeuler{T}(::Type{EulerAngles{EulerZXY}}, R::RotMatrix{T}) = rottoeuler(EulerAngles{EulerZXY, T}, R)
+rot_to_euler{T}(::Type{EulerAngles{EulerZXY}}, R::RotMatrix{T}) = rot_to_euler(EulerAngles{EulerZXY, T}, R)
 
-function rottoeuler{T}(::Type{EulerAngles{EulerZXY,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{EulerAngles{EulerZXY,T}}, R::RotMatrix)
 
 	t1 = atan2(-R[1, 2], R[2, 2])
 	ct1, st1 = cos(t1), sin(t1)
@@ -110,9 +110,9 @@ end
 # EulerYZX
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerYZX,T}) = eulertorot(ea::EulerAngles{EulerYZX,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerYZX,T}) = euler_to_rot(ea::EulerAngles{EulerYZX,T})
 
-function eulertorot{T}(ea::EulerAngles{EulerYZX,T})
+function euler_to_rot{T}(ea::EulerAngles{EulerYZX,T})
 
 
 	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
@@ -125,7 +125,7 @@ function eulertorot{T}(ea::EulerAngles{EulerYZX,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYZX,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYZX,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
@@ -139,9 +139,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYZX,U})
 end
 
 
-rottoeuler{T}(::Type{EulerAngles{EulerYZX}}, R::RotMatrix{T}) = rottoeuler(EulerAngles{EulerYZX, T}, R)
+rot_to_euler{T}(::Type{EulerAngles{EulerYZX}}, R::RotMatrix{T}) = rot_to_euler(EulerAngles{EulerYZX, T}, R)
 
-function rottoeuler{T}(::Type{EulerAngles{EulerYZX,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{EulerAngles{EulerYZX,T}}, R::RotMatrix)
 
 	t1 = atan2(-R[3, 1], R[1, 1])
 	ct1, st1 = cos(t1), sin(t1)
@@ -158,9 +158,9 @@ end
 # EulerYXZ
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerYXZ,T}) = eulertorot(ea::EulerAngles{EulerYXZ,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerYXZ,T}) = euler_to_rot(ea::EulerAngles{EulerYXZ,T})
 
-function eulertorot{T}(ea::EulerAngles{EulerYXZ,T})
+function euler_to_rot{T}(ea::EulerAngles{EulerYXZ,T})
 
 
 	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
@@ -173,7 +173,7 @@ function eulertorot{T}(ea::EulerAngles{EulerYXZ,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYXZ,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYXZ,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
@@ -187,9 +187,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYXZ,U})
 end
 
 
-rottoeuler{T}(::Type{EulerAngles{EulerYXZ}}, R::RotMatrix{T}) = rottoeuler(EulerAngles{EulerYXZ, T}, R)
+rot_to_euler{T}(::Type{EulerAngles{EulerYXZ}}, R::RotMatrix{T}) = rot_to_euler(EulerAngles{EulerYXZ, T}, R)
 
-function rottoeuler{T}(::Type{EulerAngles{EulerYXZ,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{EulerAngles{EulerYXZ,T}}, R::RotMatrix)
 
 	t1 = atan2(R[1, 3], R[3, 3])
 	ct1, st1 = cos(t1), sin(t1)
@@ -206,9 +206,9 @@ end
 # EulerXYZ
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerXYZ,T}) = eulertorot(ea::EulerAngles{EulerXYZ,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerXYZ,T}) = euler_to_rot(ea::EulerAngles{EulerXYZ,T})
 
-function eulertorot{T}(ea::EulerAngles{EulerXYZ,T})
+function euler_to_rot{T}(ea::EulerAngles{EulerXYZ,T})
 
 
 	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
@@ -221,7 +221,7 @@ function eulertorot{T}(ea::EulerAngles{EulerXYZ,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXYZ,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXYZ,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
@@ -235,9 +235,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXYZ,U})
 end
 
 
-rottoeuler{T}(::Type{EulerAngles{EulerXYZ}}, R::RotMatrix{T}) = rottoeuler(EulerAngles{EulerXYZ, T}, R)
+rot_to_euler{T}(::Type{EulerAngles{EulerXYZ}}, R::RotMatrix{T}) = rot_to_euler(EulerAngles{EulerXYZ, T}, R)
 
-function rottoeuler{T}(::Type{EulerAngles{EulerXYZ,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{EulerAngles{EulerXYZ,T}}, R::RotMatrix)
 
 	t1 = atan2(-R[2, 3], R[3, 3])
 	ct1, st1 = cos(t1), sin(t1)
@@ -254,9 +254,9 @@ end
 # EulerXZY
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerXZY,T}) = eulertorot(ea::EulerAngles{EulerXZY,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerXZY,T}) = euler_to_rot(ea::EulerAngles{EulerXZY,T})
 
-function eulertorot{T}(ea::EulerAngles{EulerXZY,T})
+function euler_to_rot{T}(ea::EulerAngles{EulerXZY,T})
 
 
 	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
@@ -269,7 +269,7 @@ function eulertorot{T}(ea::EulerAngles{EulerXZY,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXZY,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXZY,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
@@ -283,9 +283,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXZY,U})
 end
 
 
-rottoeuler{T}(::Type{EulerAngles{EulerXZY}}, R::RotMatrix{T}) = rottoeuler(EulerAngles{EulerXZY, T}, R)
+rot_to_euler{T}(::Type{EulerAngles{EulerXZY}}, R::RotMatrix{T}) = rot_to_euler(EulerAngles{EulerXZY, T}, R)
 
-function rottoeuler{T}(::Type{EulerAngles{EulerXZY,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{EulerAngles{EulerXZY,T}}, R::RotMatrix)
 
 	t1 = atan2(R[3, 2], R[2, 2])
 	ct1, st1 = cos(t1), sin(t1)
@@ -307,9 +307,9 @@ end
 # EulerZYZ
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerZYZ,T}) = eulertorot(ea::ProperEulerAngles{EulerZYZ,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerZYZ,T}) = euler_to_rot(ea::ProperEulerAngles{EulerZYZ,T})
 
-function eulertorot{T}(ea::ProperEulerAngles{EulerZYZ,T})
+function euler_to_rot{T}(ea::ProperEulerAngles{EulerZYZ,T})
 
 
 	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
@@ -322,7 +322,7 @@ function eulertorot{T}(ea::ProperEulerAngles{EulerZYZ,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZYZ,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZYZ,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
@@ -336,9 +336,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZYZ,U}
 end
 
 
-rottoeuler{T}(::Type{ProperEulerAngles{EulerZYZ}}, R::RotMatrix{T}) = rottoeuler(ProperEulerAngles{EulerZYZ, T}, R)
+rot_to_euler{T}(::Type{ProperEulerAngles{EulerZYZ}}, R::RotMatrix{T}) = rot_to_euler(ProperEulerAngles{EulerZYZ, T}, R)
 
-function rottoeuler{T}(::Type{ProperEulerAngles{EulerZYZ,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{ProperEulerAngles{EulerZYZ,T}}, R::RotMatrix)
 
 	t1 = atan2(R[2, 3], R[1, 3])
 	ct1, st1 = cos(t1), sin(t1)
@@ -355,9 +355,9 @@ end
 # EulerZXZ
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerZXZ,T}) = eulertorot(ea::ProperEulerAngles{EulerZXZ,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerZXZ,T}) = euler_to_rot(ea::ProperEulerAngles{EulerZXZ,T})
 
-function eulertorot{T}(ea::ProperEulerAngles{EulerZXZ,T})
+function euler_to_rot{T}(ea::ProperEulerAngles{EulerZXZ,T})
 
 
 	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
@@ -370,7 +370,7 @@ function eulertorot{T}(ea::ProperEulerAngles{EulerZXZ,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZXZ,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZXZ,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
@@ -384,9 +384,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZXZ,U}
 end
 
 
-rottoeuler{T}(::Type{ProperEulerAngles{EulerZXZ}}, R::RotMatrix{T}) = rottoeuler(ProperEulerAngles{EulerZXZ, T}, R)
+rot_to_euler{T}(::Type{ProperEulerAngles{EulerZXZ}}, R::RotMatrix{T}) = rot_to_euler(ProperEulerAngles{EulerZXZ, T}, R)
 
-function rottoeuler{T}(::Type{ProperEulerAngles{EulerZXZ,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{ProperEulerAngles{EulerZXZ,T}}, R::RotMatrix)
 
     t1 = atan2(R[1, 3], (-R[2, 3] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
 	ct1, st1 = cos(t1), sin(t1)
@@ -403,9 +403,9 @@ end
 # EulerYZY
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerYZY,T}) = eulertorot(ea::ProperEulerAngles{EulerYZY,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerYZY,T}) = euler_to_rot(ea::ProperEulerAngles{EulerYZY,T})
 
-function eulertorot{T}(ea::ProperEulerAngles{EulerYZY,T})
+function euler_to_rot{T}(ea::ProperEulerAngles{EulerYZY,T})
 
 
 	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
@@ -418,7 +418,7 @@ function eulertorot{T}(ea::ProperEulerAngles{EulerYZY,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYZY,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYZY,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
@@ -432,9 +432,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYZY,U}
 end
 
 
-rottoeuler{T}(::Type{ProperEulerAngles{EulerYZY}}, R::RotMatrix{T}) = rottoeuler(ProperEulerAngles{EulerYZY, T}, R)
+rot_to_euler{T}(::Type{ProperEulerAngles{EulerYZY}}, R::RotMatrix{T}) = rot_to_euler(ProperEulerAngles{EulerYZY, T}, R)
 
-function rottoeuler{T}(::Type{ProperEulerAngles{EulerYZY,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{ProperEulerAngles{EulerYZY,T}}, R::RotMatrix)
 
     t1 = atan2(R[3, 2], (-R[1, 2] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
 	ct1, st1 = cos(t1), sin(t1)
@@ -451,9 +451,9 @@ end
 # EulerYXY
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerYXY,T}) = eulertorot(ea::ProperEulerAngles{EulerYXY,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerYXY,T}) = euler_to_rot(ea::ProperEulerAngles{EulerYXY,T})
 
-function eulertorot{T}(ea::ProperEulerAngles{EulerYXY,T})
+function euler_to_rot{T}(ea::ProperEulerAngles{EulerYXY,T})
 
 
 	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
@@ -466,7 +466,7 @@ function eulertorot{T}(ea::ProperEulerAngles{EulerYXY,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYXY,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYXY,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
@@ -480,9 +480,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYXY,U}
 end
 
 
-rottoeuler{T}(::Type{ProperEulerAngles{EulerYXY}}, R::RotMatrix{T}) = rottoeuler(ProperEulerAngles{EulerYXY, T}, R)
+rot_to_euler{T}(::Type{ProperEulerAngles{EulerYXY}}, R::RotMatrix{T}) = rot_to_euler(ProperEulerAngles{EulerYXY, T}, R)
 
-function rottoeuler{T}(::Type{ProperEulerAngles{EulerYXY,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{ProperEulerAngles{EulerYXY,T}}, R::RotMatrix)
 
 	t1 = atan2(R[1, 2], R[3, 2])
 	ct1, st1 = cos(t1), sin(t1)
@@ -499,9 +499,9 @@ end
 # EulerXYX
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerXYX,T}) = eulertorot(ea::ProperEulerAngles{EulerXYX,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerXYX,T}) = euler_to_rot(ea::ProperEulerAngles{EulerXYX,T})
 
-function eulertorot{T}(ea::ProperEulerAngles{EulerXYX,T})
+function euler_to_rot{T}(ea::ProperEulerAngles{EulerXYX,T})
 
 
 	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
@@ -514,7 +514,7 @@ function eulertorot{T}(ea::ProperEulerAngles{EulerXYX,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXYX,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXYX,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
@@ -528,9 +528,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXYX,U}
 end
 
 
-rottoeuler{T}(::Type{ProperEulerAngles{EulerXYX}}, R::RotMatrix{T}) = rottoeuler(ProperEulerAngles{EulerXYX, T}, R)
+rot_to_euler{T}(::Type{ProperEulerAngles{EulerXYX}}, R::RotMatrix{T}) = rot_to_euler(ProperEulerAngles{EulerXYX, T}, R)
 
-function rottoeuler{T}(::Type{ProperEulerAngles{EulerXYX,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{ProperEulerAngles{EulerXYX,T}}, R::RotMatrix)
 
 	t1 = atan2(R[2, 1], (-R[3, 1] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
 	ct1, st1 = cos(t1), sin(t1)
@@ -547,9 +547,9 @@ end
 # EulerXZX
 #
 
-eulertorot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerXZX,T}) = eulertorot(ea::ProperEulerAngles{EulerXZX,T})
+euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerXZX,T}) = euler_to_rot(ea::ProperEulerAngles{EulerXZX,T})
 
-function eulertorot{T}(ea::ProperEulerAngles{EulerXZX,T})
+function euler_to_rot{T}(ea::ProperEulerAngles{EulerXZX,T})
 
 
 	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
@@ -562,7 +562,7 @@ function eulertorot{T}(ea::ProperEulerAngles{EulerXZX,T})
 
 end
 
-function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXZX,U})
+function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXZX,U})
 
 	wT = promote_type(T, U)
 	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
@@ -576,9 +576,9 @@ function eulertorot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXZX,U}
 end
 
 
-rottoeuler{T}(::Type{ProperEulerAngles{EulerXZX}}, R::RotMatrix{T}) = rottoeuler(ProperEulerAngles{EulerXZX, T}, R)
+rot_to_euler{T}(::Type{ProperEulerAngles{EulerXZX}}, R::RotMatrix{T}) = rot_to_euler(ProperEulerAngles{EulerXZX, T}, R)
 
-function rottoeuler{T}(::Type{ProperEulerAngles{EulerXZX,T}}, R::RotMatrix)
+function rot_to_euler{T}(::Type{ProperEulerAngles{EulerXZX,T}}, R::RotMatrix)
 
     t1 = atan2(R[3, 1], R[2, 1])  
 	ct1, st1 = cos(t1), sin(t1)

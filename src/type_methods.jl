@@ -57,6 +57,7 @@ function param_functions1{rot_type}(::Type{rot_type})
         # add the element type from another source when it's not present
         add_eltype{T <: AbstractFloat}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
         add_eltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){$(def_element)}  # need a float
+        add_eltype(::Type{$(rot_type)}, ::Type{Any}) = $(rot_type){$(def_element)}  # need a float
         add_eltype{T}(::Type{$(rot_type)}, ::Type{T}) = add_eltype($(rot_type), eltype(T))
 
         # add the element type from another source when it is already present (ignore the other source)
@@ -141,6 +142,7 @@ function param_functions2{rot_type}(::Type{rot_type})
         # add the element type from another source when it's not present 
         add_eltype{ORDER, T <: AbstractFloat}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
         add_eltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, $(def_element)}  # need a float
+        add_eltype{ORDER}(::Type{$(rot_type){ORDER}}, ::Type{Any}) = $(rot_type){ORDER, $(def_element)}  # need a float
         add_eltype{ORDER, T}(::Type{$(rot_type){ORDER}}, ::Type{T}) = add_eltype($(rot_type){ORDER}, eltype(T))
 
         # add the element type from another source when it is already present (ignore the other source)

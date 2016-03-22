@@ -4,68 +4,53 @@ Function to convert a covariance matrix containing one rotation parameterization
 
 Inputs:
 
-    oT        - output rotation type
+    tfunc     - transformation function, should take a Vector with length size(cX, 1) as an input and return the transformed state vector
 
-    iT        - input rotation type
+    cX        - covariance matrix 
 
-    cX        - covariance matrix (set = nothing to enforce zero mean in input and output)
+    xbar      - mean X in the input space (set = nothing to enforce zero mean in input and output)
 
-    xbar      - mean X in the input space
+    oT_cov    - output type for the covariance matrix (default Matrix)
 
-    idx_in   - range with the row indexes of the rotation parameters in the input (they should be contiguous)
-
-    idx_ou   - range with the row indexes of the rotation parameters in the output (defaults to idx_in)
+    oT_mean   - output type for the covariance matrix (default Vector)
 
 
 Experimental - This is not a fast implementation
 
 """ ->
-function convert_covariance{T <: RotationTypes, U <: RotationTypes}(oT::Type{T}, iT::Type{U}, cX, xbar=zeros(size(cX,1)), idx_in=4:6, idx_out=idx_in)
-
-    # make sure the element type is specified in the output type
-    oT = promote_rottype(oT, eltype(iT)) 
-
-    # difference in dimensionality of output and input rotation parameterisation
-    ddims = length(idx_out) - length(idx_in)
+function convert_covariance{T, U, V}(tfunc, cX, xbar::V=zeros(size(cX,1)), ::Type{T}=Any, ::Type{U}=Any)
 
     # generate the sigma points
-    (sigma_points, weights) = getsigmapoints(cX, xbar)
-
-    # convert them to spquat's
-    if (0 == ddims)
-        sigma_trans = sigma_points  # can transform in place
-    else
-        # need a different size on output, so create a copy
-        sigma_trans = zeros(size(sigma_points,1) + ddims, size(sigma_points,2))
-        sidx = 1:idx_in[1] - 1
-        eidx = (idx_in[end] + 1):size(cX,1)
-        sigma_trans[sidx,:] = sigma_points[sidx,:]
-        sigma_trans[eidx + ddims,:] = sigma_points[eidx,:]
-    end
+    (sigmas, weights) = sigma_points(cX, xbar)
+    
+    # get the output size
+    siz = ((T == Any) ? length(tfunc(sigmas[:,1])) : size(T,1))::Int
 
     # and convert
-    for i = 1:size(sigma_points,2)
-        sigma_trans[idx_out,i] = oT(iT(sigma_points[idx_in,i]))  # type it as the input type before converting to the output type
+    sigma_trans = zeros(siz, size(sigmas, 2))
+    for i = 1:size(sigmas,2)
+        sigma_trans[:,i] = tfunc(sigmas[:,i])     # type it as the input type before converting to the output type
     end
 
-    if xbar == nothing
-        xbar_out = nothing
-    elseif isa(xbar, FixedSizeArray.FixedArray) 
-        xbar_out = (ddims == 0) ? setindex(xbar, oT(iT(xbar[idx_in])), idx_out) : Vec(xbar(sidx)..., oT(iT(xbar[idx_in]))..., xbar(eidx)...)
-    elseif (ddims == 0)
-        xbar_out = copy(xbar)
-        xbar_out[idx_ind] = oT(iT(xbar_out[idx_in]))
-    else
-        xbar_out = [xbar(sidx); oT(iT(xbar[idx_in])); xbar(eidx)]
-    end    
+    # and build the output mean
+    xbar_out = (V == Void) ? nothing : vec(mean(sigma_trans,2))
 
-    return covfromsigmapoints(sigma_points, weights, xbar_out), xbar_out  # return the mean as well
+    # convert the sigma points back into a covariance
+    cX = sigma_point_cov(sigma_trans, weights, xbar_out)  
+    if (T != Any)
+        cX = T(cX)::T
+    end
+    if (V != Void) && (U != Any)
+        xbar_out = U(xbar_out)::U
+    end
+
+    return cX, xbar_out  # return the mean as well
 end
 
 
 
 # generate sigma points for a specifified covaraince
-function getsigmapoints(cX, xbar=nothing)
+function sigma_points{V}(cX, xbar::V=nothing)
 
     if !isa(cX, AbstractMatrix)
         cX = Matrix(cX)  # chol works with Matrix not other types
@@ -83,7 +68,8 @@ function getsigmapoints(cX, xbar=nothing)
     weights[2:end] = (1.0-W0)/(2.0*n)
 
     # sigma points
-    if xbar != nothing
+    if (V != Void)
+        xbar = Vector(xbar)
         sigma_points = [xbar  (xbar .+  R)   xbar .- R]
     else
         sigma_points = [zeros(size(cX,1))  R   -R]
@@ -96,7 +82,7 @@ end
 
 
 # generate covariance from sigma points
-function covfromsigmapoints(sigma_points, weights, xbar=nothing)
+function sigma_point_cov(sigma_points, weights, xbar=nothing)
 
     # recover the covariance
     #cX_out = (sigmaPointWeightsObs'.* sigmaPoints) * sigmaPoints'
@@ -105,9 +91,44 @@ function covfromsigmapoints(sigma_points, weights, xbar=nothing)
     end
     cov = sigma_points * (sigma_points' .* weights)  # maybe better than the above (less copy but mult across rows)
 
-    #This is poop!! Force covariance matrix symmetric. TODO: implement sqrt
-    #kf or other symmetric update scheme
+    #This is poop!! Force covariance matrix symmetric. 
     cov = 0.5*(cov + cov')
     return cov
 
 end
+
+
+
+#=
+# investigate the distribution of SpQuat vars relative to Gaussian Euler Angles
+# TLDR it appears pretty Gaussian itself
+using PyPlot
+function test_dist(std=10.0, n::Int=100_000)
+
+    # generate the Euler angles
+    cX_euler = diagm(fill(std,3)*pi/180) .^ 2  # keep it small angle
+    sX_euler = chol(cX_euler, Val{:L})
+    ea_vec = [EulerAngles(sX_euler * randn(size(sX_euler, 1))) for i in 1:n]
+
+    # convert them    
+    x, y, z = zeros(n), zeros(n), zeros(n)
+    for (i, ea) in enumerate(ea_vec)
+        spq = SpQuat(ea)
+        x[i], y[i], z[i] = (spq...)
+    end
+
+    # show the results
+    figure();
+    plt[:hist](x, div(n, 50)); title("x (std=$(std))")
+    figure();
+    plt[:hist](y, div(n, 50)); title("y (std=$(std))")
+    figure();
+    plt[:hist](z, div(n, 50)); title("z (std=$(std))")
+    return (x,y,z)
+
+end
+=#
+
+
+
+
