@@ -186,15 +186,23 @@ function add_constructors(rot_type)
 
     def_params = default_params(rot_type)  # default element to use
 
-    # build expressions for the input and output tupples
-    input_expr = :(())   # build an expression for a tuple
-    output_expr = :(())  # build an expression for a tuple
-    for i = 1:numel(rot_type)
-        xi = symbol("x$(i)")
-        push!(input_expr.args, :($(xi)::Int))
-        push!(output_expr.args, :($(xi)))
-    end
+    # build expressions for the input / output elements
+    xsym = [symbol("x$(i)") for i in 1:numel(rot_type)]
 
+    # create an expression for a tupple x1, x2, x3...
+    output_expr = :(())
+    append!(output_expr.args, [:($(xsym[i])) for i in 1:numel(rot_type)])
+
+    # create an expression for a tupple x1::Int, x2::Int, x3::Int... for allowing construction from Ints
+    input_expr = :(())
+    append!(input_expr.args, [:($(xsym[i])::Int) for i in 1:numel(rot_type)])
+
+    # need another expression for the moment to fix an element conversion problem
+    if (rot_type <: FixedVectorNoTuple)
+        fields = fieldnames(rot_type)
+        input_expr_cast = :(())  # build an expression for a tuple
+        append!(input_expr_cast.args, [:(T(X.$(fields[i]))) for i in 1:numel(rot_type)])
+    end
     
     # and build     
     if (n_params(rot_type) == 1)
@@ -204,6 +212,16 @@ function add_constructors(rot_type)
             call(::Type{$(rot_type)}, $(input_expr.args...)) = $(rot_type){$(def_params[1])}($(output_expr.args...))
 
         end
+
+        # at the time this was added there was soemething wrong with FSA's element type conversion, so make a fix for that
+        if (rot_type <: FixedVectorNoTuple)
+            qn = quote
+                convert{T <: AbstractFloat}(::Type{$(rot_type){T}}, X::$(rot_type){T}) = X
+                convert{T <: AbstractFloat}(::Type{$(rot_type){T}}, X::$(rot_type)) = $(rot_type){T}($(input_expr_cast.args...))
+            end
+            append!(q.args, qn.args)
+        end
+
     elseif (n_params(rot_type) == 2)
         q = quote
 
@@ -212,9 +230,20 @@ function add_constructors(rot_type)
             call{T}(::Type{$(rot_type){T}}, $(input_expr.args...)) = $(rot_type){T, $(def_params[2])}($(output_expr.args...))
     
         end
+
+        # at the time this was added there was soemething wrong with FSA's element type conversion, so make a fix for that
+        if (rot_type <: FixedVectorNoTuple)
+            qn = quote
+                convert{ORD, T <: AbstractFloat}(::Type{$(rot_type){ORD, T}}, X::$(rot_type){ORD, T}) = X
+                convert{ORD, T <: AbstractFloat, U <: AbstractFloat}(::Type{$(rot_type){ORD, T}}, X::$(rot_type){ORD,U}) = $(rot_type){ORD, T}($(input_expr_cast.args...))
+            end
+            append!(q.args, qn.args)
+        end
     else
         q = quote end
     end
+    return q
+    
 end
 
 
@@ -257,6 +286,10 @@ function add_vector_conversions(rot_type)  # for 4 element representations
         if !($(rot_type) <: FixedArray)  # need this for quaternions
             call{T}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = convert(Vec{$(numel(rot_type)),T}, X)
             call(::Type{Vec}, X::$(rot_type)) = convert(Vec, X)
+        elseif ($(rot_type) <: Mat)
+            # Fixed size arrays have changed call so it no defaulting to convert, so fix it here and hope nothing breaks elsewhere...
+            call{T <: $(rot_type)}(::Type{Vec}, X::T) = convert(Vec, X)
+            call{T <: Real}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = convert(Vec{$(numel(rot_type)),T}, X)
         end
 
         # convert to mutable vector

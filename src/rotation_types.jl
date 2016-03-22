@@ -154,6 +154,9 @@ default_params{T <: AngleAxis}(::Type{T}) = (@DefaultElType(), )
 rot_angle(aa::AngleAxis) = aa.theta - floor((aa.theta+pi) / (2*pi)) * 2*pi  # named to match the quaternion equivilent
 axis(aa::AngleAxis) = Vec(aa.axis_x, aa.axis_y, aa.axis_z)
 
+# construct with funny inputs
+call(::Type{AngleAxis}, theta::Real, x::Real, y::Real, z::Real) = add_params(AngleAxis, promote_type(typeof(theta), typeof(x), typeof(y), typeof(z)))(theta,x,y,z)
+
 
 
 

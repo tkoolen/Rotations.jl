@@ -1,4 +1,5 @@
 # function to perform tests of the rotation functions in the Rotations module
+using Base.Test
 using FixedSizeArrays
 using Quaternions
 using Rotations
@@ -47,18 +48,18 @@ end
 
 # build a full list of rotation types including the different ordering schemas
 rot_types = Vector{Any}(0)
-for rt in Rotations.RotTypeList
-    if (Rotations.n_params(rt) == 2)
+for rT in Rotations.RotTypeList
+    if (Rotations.n_params(rT) == 2)
 
         # get the super type for the order parameter
-        order_type = super(Rotations.default_params(rt)[1])
+        order_type = super(Rotations.default_params(rT)[1])
         for order in subtypes(order_type)
-            push!(rot_types, rt{order})
+            push!(rot_types, rT{order})
         end
     end
 
     # ordered ones should have defaults so leave them in
-    push!(rot_types, rt)
+    push!(rot_types, rT)
 end
 
 # define null rotations for conveniences
@@ -79,9 +80,10 @@ null_rotation{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD, Floa
 # Do no rotation
 R = RotMatrix(eye(3))
 # println("********************************\nIndentity checks\n********************************\n")
-for rt in rot_types
-    rot_var = rt(R)
-    null_var = null_rotation(rt)
+for rT in rot_types
+    # println(rT)
+    rot_var = rT(R)
+    null_var = null_rotation(rT)
     @types_approx_eq(rot_var, null_var)
 end
 
@@ -94,10 +96,10 @@ end
 # println("\n\n\n********************************\nVector conversion checks\n********************************\n")
 R = RotMatrix(eye(3))
 eltypes = subtypes(AbstractFloat)  # only abstarct floats are supported by all
-for rt in rot_types
+for rT in rot_types
 
-    #println("$(rt)")
-    rot_var = rt(R)
+    # println("$(rT)")
+    rot_var = rT(R)
     
     # export to immutable
     ivu = Vec(rot_var)
@@ -108,19 +110,21 @@ for rt in rot_types
     @contents_approx_eq(rot_var, mvu)
 
     # import from immutable
-    rot_ivu = rt(ivu)
+    rot_ivu = rT(ivu)
     @types_approx_eq(rot_var, rot_ivu)
 
     # import from mutable
-    rot_ivu = rt(mvu)
+    rot_ivu = rT(mvu)
     @types_approx_eq(rot_var, rot_ivu)
 
     # test typed stuff
     for eT in eltypes
         
+        # println("$(rT): $(eT)")
+        
         # export to immutable
-        ivt = Vec{Rotations.numel(rt), eT}(rot_var)
-        ivc = convert(Vec{Rotations.numel(rt), eT}, ivu)
+        ivt = Vec{Rotations.numel(rT), eT}(rot_var)
+        ivc = convert(Vec{Rotations.numel(rT), eT}, ivu)
         @types_approx_eq(ivt, ivc)
     
         # export to mutable
@@ -129,15 +133,15 @@ for rt in rot_types
         @types_approx_eq(mvt, mvc)
 
         # import from immutable
-        rot_ivt = rt(ivt)
+        rot_ivt = rT(ivt)
         @contents_approx_eq_notype(rot_var, rot_ivt)
 
         # import from mutable
-        rot_mvt = rt(mvt)
+        rot_mvt = rT(mvt)
         @contents_approx_eq_notype(rot_var, rot_mvt)
 
         # and test the element conversion on the rotation parameterization directly
-        rot_c = convert(Rotations.add_params(rt, eT), rot_var)
+        rot_c = convert(Rotations.add_params(rT, eT), rot_var)
         @contents_approx_eq(rot_c, rot_mvt)
 
     end
@@ -154,11 +158,11 @@ end
 repeats = 1000
 thresh = 1e-6
 eye3 = @fsa([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
-for rt_in in rot_types
+for rT_in in rot_types
 
-    for rt_out in rot_types
+    for rT_out in rot_types
 
-        # println("$(rt_in) - > $(rt_out)")
+        # println("$(rT_in) - > $(rT_out)")
 
         # and each test
         #fcount = 0
@@ -166,10 +170,10 @@ for rt_in in rot_types
             
             # start with a random quaternion
             q = nquatrand()
-            X = convert_rotation(rt_in, q)
+            X = convert_rotation(rT_in, q)
 
             # round trip conversion
-            Xd = convert_rotation(rt_in, convert_rotation(rt_out, X))
+            Xd = convert_rotation(rT_in, convert_rotation(rT_out, X))
 
             # compare rotations before and after the round trip
             Rout = RotMatrix(X) * RotMatrix(Xd)'  # should be the ident
@@ -178,7 +182,7 @@ for rt_in in rot_types
             #fcount += (rd > thresh)
         end
         #if (fcount > 0)
-        #    warn("Failed $(fcount) / $(repeats): $(rt_in) - > $(rt_out)")
+        #    warn("Failed $(fcount) / $(repeats): $(rT_in) - > $(rT_out)")
         #end
     end
 end
