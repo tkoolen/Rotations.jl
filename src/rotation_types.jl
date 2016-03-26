@@ -47,7 +47,7 @@ eltype{T}(::Type{Quaternion{T}}) = T
 # add an indexing scheme
 getindex(X::Quaternion, idx::Integer) = getfield(X, idx)
 
-# an extra constructor (its annoying this is missing)
+# an extra constructor
 call{T}(::Type{Quaternion{T}}, a::Real, b::Real, c::Real, d::Real) = Quaternion(T(a), T(b), T(c), T(d))
 
 # define its interaction with other angle representations
@@ -96,6 +96,9 @@ immutable SpQuat{T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
     x::T
     y::T
     z::T
+    function SpQuat(X::NTuple{3, T}) #FSA:: needs to be like this to keep constructor code sane
+       new{T}(X[1], X[2], X[3])
+    end
 end
 
 # convert to a known one
@@ -134,6 +137,9 @@ immutable AngleAxis{T <: AbstractFloat}  <: FixedVectorNoTuple{4, T}
     axis_x::T
     axis_y::T
     axis_z::T
+    function AngleAxis(X::NTuple{4, T}) #FSA:: needs to be like this to keep constructor code sane
+       new{T}(X[1], X[2], X[3], X[4])
+    end
 end
 
 # define its interaction with other angle representations
@@ -169,26 +175,8 @@ call(::Type{AngleAxis}, theta::Real, x::Real, y::Real, z::Real) = add_params(Ang
 # ProperEulerAngles - for proper Euler ordering
 include("euler_types.jl") 
 
-macro DefaultEulerOrder(); EulerZXY; end
-macro DefaultProperEulerOrder(); EulerXZX; end
-
 default_params{T <: EulerAngles}(::Type{T}) = (@DefaultEulerOrder(), @DefaultElType()) 
 default_params{T <: ProperEulerAngles}(::Type{T}) = (@DefaultProperEulerOrder(), @DefaultElType()) # there's no reason why this order was chosen as the default
-
-# add default values to them
-#call(::Type{EulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles)(x,y,z)
-call(::Type{EulerAngles}, x::Real, y::Real, z::Real) = add_params(EulerAngles, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
-
-#call(::Type{ProperEulerAngles}, x::Integer, y::Integer, z::Integer) = add_params(ProperEulerAngles)(x,y,z)
-call(::Type{ProperEulerAngles}, x::Real, y::Real, z::Real) = add_params(ProperEulerAngles, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
-
-# add some extra construction methods
-#call{T <: TaitByranOrder}(::Type{EulerAngles{T}}, x::Integer, y::Integer, z::Integer) = add_params(EulerAngles{T})(x,y,z)
-call{T <: TaitByranOrder}(::Type{EulerAngles{T}}, x::Real, y::Real, z::Real) = add_params(EulerAngles{T}, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
-
-#call{T <: ProperEulerOrder}(::Type{ProperEulerAngles{T}}, x::Integer, y::Integer, z::Integer) = add_params(ProperEulerAngles{T})(x,y,z)
-call{T <: ProperEulerOrder}(::Type{ProperEulerAngles{T}}, x::Real, y::Real, z::Real) = add_params(ProperEulerAngles{T}, promote_type(typeof(x), typeof(y), typeof(z)))(x,y,z)
-
 
 # Rotations to Euler angles
 convert_rotation{T <: EulerAngles}(::Type{T}, R::RotMatrix) = rot_to_euler(add_params(T, R), R)

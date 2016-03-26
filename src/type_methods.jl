@@ -189,87 +189,159 @@ function add_constructors(rot_type)
     # build expressions for the input / output elements
     xsym = [symbol("x$(i)") for i in 1:numel(rot_type)]
 
-    # create an expression for a tupple x1, x2, x3...
-    output_expr = :(())
-    append!(output_expr.args, [:($(xsym[i])) for i in 1:numel(rot_type)])
+    # create an expression for a tuple x1, x2, x3...
+    rhs_expr = :(())
+    append!(rhs_expr.args, [:($(xsym[i])) for i in 1:numel(rot_type)])
 
-    # create an expression for a tupple x1::Int, x2::Int, x3::Int... for allowing construction from Ints
-    input_expr = :(())
-    append!(input_expr.args, [:($(xsym[i])::Int) for i in 1:numel(rot_type)])
+    # create an expression for a tuple X[1], X[2], etc...
+    if !(rot_type <: Mat)
+        rhs_tuple_expr = :(())
+        append!(rhs_tuple_expr.args, [:(X[$(i)]) for i in 1:numel(rot_type)])
+    else
 
-    # need another expression for the moment to fix an element conversion problem
-    if (rot_type <: FixedVectorNoTuple)
-        fields = fieldnames(rot_type)
-        input_expr_cast = :(())  # build an expression for a tuple
-        append!(input_expr_cast.args, [:(T(X.$(fields[i]))) for i in 1:numel(rot_type)])
+        # I'm not sure what's going on with the matrix constructor, but its not what I want        
+        rhs_tuple_expr = :(())
+        for c in 1:size(rot_type,2)
+            col_expr = :(())
+            idx = (c-1)*size(rot_type,1) + (1:size(rot_type,1))
+            append!(col_expr.args, [:(X[$(i)]) for i in idx])
+            push!(rhs_tuple_expr.args, col_expr)
+        end
     end
+
+    # create an expression for a tuple x1::Int, x2::Int, x3::Int... for allowing construction from Ints
+    lhs_expr = :(())
+    append!(lhs_expr.args, [:($(xsym[i])::T) for i in 1:numel(rot_type)])
     
     # and build     
-    if (n_params(rot_type) == 1)
-        q = quote
-        
-            # a constructor in case all inputs where Ints (element types should be AbstractFloat)
-            call(::Type{$(rot_type)}, $(input_expr.args...)) = $(rot_type){$(def_params[1])}($(output_expr.args...))
+    q = quote
 
-        end
-
-        # at the time this was added there was soemething wrong with FSA's element type conversion, so make a fix for that
-        if (rot_type <: FixedVectorNoTuple)
-            qn = quote
-                convert{T <: AbstractFloat}(::Type{$(rot_type){T}}, X::$(rot_type){T}) = X
-                convert{T <: AbstractFloat}(::Type{$(rot_type){T}}, X::$(rot_type)) = $(rot_type){T}($(input_expr_cast.args...))
-            end
-            append!(q.args, qn.args)
-        end
-
-    elseif (n_params(rot_type) == 2)
-        q = quote
-
-            # a constructor for the case where all inputs are Ints (element types should be AbstractFloat)
-            call(::Type{$(rot_type)}, $(input_expr.args...)) = $(rot_type){$(def_params[1]), $(def_params[2])}($(output_expr.args...))
-            call{T}(::Type{$(rot_type){T}}, $(input_expr.args...)) = $(rot_type){T, $(def_params[2])}($(output_expr.args...))
+        #
+        # Allow construction from Ints by converting them
+        #
     
+        # allow construction from integer inputs
+        if ($(n_params(rot_type)) == 1)  # need a special version for mor than 1 parameter
+            call{T <: Integer}(::Type{$(rot_type)}, $(lhs_expr.args...)) = add_params($(rot_type))($(rhs_expr.args...))
         end
 
-        # at the time this was added there was soemething wrong with FSA's element type conversion, so make a fix for that
-        if (rot_type <: FixedVectorNoTuple)
-            qn = quote
-                convert{ORD, T <: AbstractFloat}(::Type{$(rot_type){ORD, T}}, X::$(rot_type){ORD, T}) = X
-                convert{ORD, T <: AbstractFloat, U <: AbstractFloat}(::Type{$(rot_type){ORD, T}}, X::$(rot_type){ORD,U}) = $(rot_type){ORD, T}($(input_expr_cast.args...))
+        # allow construction from an integer tuple
+        convert{T <: Integer}(::Type{$(rot_type)}, X::NTuple{$(numel(rot_type)), T}) = add_params($(rot_type))($(rhs_tuple_expr.args...))            
+        call{T <: Integer}(::Type{$(rot_type)}, X::NTuple{$(numel(rot_type)), T}) = add_params($(rot_type))($(rhs_tuple_expr.args...))
+
+        # allow construction from an Fixed Size Array Vector of ints
+        convert{T <: Integer}(::Type{$(rot_type)}, X::Vec{$(numel(rot_type)), T}) = add_params($(rot_type))($(rhs_tuple_expr.args...))
+        call{T <: Integer}(::Type{$(rot_type)}, X::Vec{$(numel(rot_type)), T}) = add_params($(rot_type))($(rhs_tuple_expr.args...))
+
+        # Quaternions has a weird constructor 3 element vector constructor 
+        if ($(rot_type) == Quaternion)
+            function convert{T <: Integer}(::Type{Quaternion}, X::Vector{T}) 
+                (length(X) == 4) ? add_params($(rot_type))($(rhs_tuple_expr.args...)) : (length(X) == 3) ? add_params($(rot_type))(0, X[1], X[2], X[3]) : error("Vector should have 3 or 4 elements")
             end
-            append!(q.args, qn.args)
+        else
+            # allow construction from an mutable Vector of Ints
+            function convert{T <: Integer}(::Type{$(rot_type)}, X::Vector{T})
+                length(X) == $(numel(rot_type)) || error("Vector should have $(numel(rot_type)) elements")
+                add_params($(rot_type))($(rhs_tuple_expr.args...))
+            end
         end
-    else
-        q = quote end
+
+        #
+        # Allow extra constructors to non-fixed array types (and fix the rotation matrix ones zzz)
+        #
+        if !($(rot_type) <: FixedArray) || ($(rot_type) <: Mat)
+
+            # allow construction from a tuple if this isn't a fixed array
+            convert{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = add_params(T, U)($(rhs_tuple_expr.args...))
+            call{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = convert(add_params(T, U), X)
+
+            # allow construction from an Fixed Size Array Vector
+            convert{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vec{$(numel(rot_type)), U}) = add_params(T, U)($(rhs_tuple_expr.args...))
+            call{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vec{$(numel(rot_type)), U}) = convert(add_params(T, U), X)
+
+            # special case for Quaternion from a Vector
+            if ($(rot_type) == Quaternion)
+                function convert{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vector{U}) 
+                    (length(X) == 4) ? add_params(T,U)($(rhs_tuple_expr.args...)) : (length(X) == 3) ? add_params(T,U)(0, X[1], X[2], X[3]) : error("Vector should have 3 or 4 elements")
+                end
+                call{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vector{U}) = convert(T, X)
+            else
+                convert{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vector{U}) = add_params(T, U)($(rhs_tuple_expr.args...))
+                call{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vector{U}) = convert(add_params(T, U), X)
+            end
+        end
     end
+
+    #
+    # add the extra parameter methods if it has an extra parameter
+    #
+
+    if (n_params(rot_type) == 2)
+
+        # create an expression for a tuple T(x1), T(x2), T(x3)...
+        rhs_typed_expr = :(())
+        append!(rhs_typed_expr.args, [:(T($(xsym[i]))) for i in 1:numel(rot_type)])
+
+        rhs_tuple_typed_expr = :(())
+        append!(rhs_tuple_typed_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
+
+        # the type for the first parameter
+        P1Type = super(def_params[1])
+
+        qn = quote
+
+            #
+            # N.B. with the extra parameter, the fixed size array constructors seems to need spoon feeding...
+            #
+            
+            call{T <: AbstractFloat}(::Type{$(rot_type)}, $(lhs_expr.args...)) = add_params($(rot_type), T)($(rhs_expr.args...))
+            call{P1 <: $(P1Type), T <: AbstractFloat}(::Type{$(rot_type){P1}}, $(lhs_expr.args...)) = add_params($(rot_type){P1}, T)($(rhs_expr.args...))
+
+            # define element conversion
+            convert{P1 <: $(P1Type), T <: AbstractFloat}(::Type{$(rot_type)}, X::$(rot_type){P1, T}) = X
+            convert{P1 <: $(P1Type), T <: AbstractFloat}(::Type{$(rot_type){P1}}, X::$(rot_type){P1, T}) = X
+            convert{P1 <: $(P1Type), T <: AbstractFloat}(::Type{$(rot_type){P1, T}}, X::$(rot_type){P1, T}) = X
+            convert{P1 <: $(P1Type), T <: AbstractFloat, U <: AbstractFloat}(::Type{$(rot_type){P1, T}}, X::$(rot_type){P1, U}) = $(rot_type){P1, T}($(rhs_tuple_typed_expr.args...))
+            
+            call{T <: AbstractFloat}(::Type{$(rot_type)}, X::NTuple{$(numel(rot_type)), T}) = add_params($(rot_type), T)($(rhs_tuple_expr.args...))
+            call{P1 <: $(P1Type), T <: AbstractFloat}(::Type{$(rot_type){P1}}, X::NTuple{$(numel(rot_type)), T}) = add_params($(rot_type){P1}, T)($(rhs_tuple_expr.args...))
+            convert{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = add_params(T, U)($(rhs_tuple_expr.args...))
+            
+            call{T <: AbstractFloat}(::Type{$(rot_type)}, X::Vec{$(numel(rot_type)), T}) = add_params($(rot_type), T)($(rhs_tuple_expr.args...))
+            call{P1 <: $(P1Type), T <: AbstractFloat}(::Type{$(rot_type){P1}}, X::Vec{$(numel(rot_type)), T}) = add_params($(rot_type){P1}, T)($(rhs_tuple_expr.args...))
+            convert{T <: $(rot_type), U <: AbstractFloat}(::Type{T}, X::Vec{$(numel(rot_type)), U}) = add_params(T, U)($(rhs_tuple_expr.args...))            
+
+            # allow construction from integer inputs
+            call{P1, T <: Integer}(::Type{$(rot_type){P1}}, $(lhs_expr.args...)) = add_params($(rot_type){P1})($(rhs_expr.args...))
+            
+            convert{P1, T <: Integer}(::Type{$(rot_type){P1}}, X::NTuple{$(numel(rot_type)), T}) = add_params($(rot_type){P1})($(rhs_tuple_expr.args...))
+            call{P1, T <: Integer}(::Type{$(rot_type){P1}}, X::NTuple{$(numel(rot_type)), T}) = convert($(rot_type){P1}, X) 
+
+            convert{P1, T <: Integer}(::Type{$(rot_type){P1}}, X::Vec{$(numel(rot_type)), T}) = add_params($(rot_type){P1})($(rhs_tuple_expr.args...))    
+            call{P1, T <: Integer}(::Type{$(rot_type){P1}}, X::Vec{$(numel(rot_type)), T}) = convert($(rot_type){P1}, X)
+
+        end
+        append!(q.args, qn.args)
+    end
+
+    
+
     return q
     
 end
 
 
 #
-# function to create a code block to perform conversion to and from vector types
+# function to create a code block to convert to Vec and Vectro types
 # 
-function add_vector_conversions(rot_type)  # for 4 element representations
+function add_export_conversions(rot_type)  
 
     # special case for building the mat type, we need a tuple for each column
     if (rot_type <: Mat)
-        construct_expr = :(())
-        for c in 1:size(rot_type,2)
-            col_expr = :(())
-            idx = (c-1)*size(rot_type,1) + (1:size(rot_type,1))
-            append!(col_expr.args, [:(T(X[$(i)])) for i in idx])
-            push!(construct_expr.args, col_expr)
-        end
-
         # use indices not fieldnames to access members
         output_expr = :(())  # build an expression for a tuple
         append!(output_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
-
     else
-        # grab from input vectors using an index
-        construct_expr = :(())
-        append!(construct_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
 
         # use fieldnames to access members for exporting (I think its faster)
         fields = fieldnames(rot_type)
@@ -278,50 +350,52 @@ function add_vector_conversions(rot_type)  # for 4 element representations
 
     end
 
+    # grab from input vectors using an index
+    construct_expr = :(())
+    append!(construct_expr.args, [:(T(X[$(i)])) for i in 1:numel(rot_type)])
+
     quote
+
+        if !($(rot_type) <: FixedArray)  # fixed arrays have these exports defined
     
-        # convert to a fixed size a vector
-        convert{T <: $(rot_type)}(::Type{Vec}, X::T) = convert(Vec{$(numel(rot_type)), eltype(T)}, X)
-        convert{T <: Real}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = Vec{$(numel(rot_type)),T}($(output_expr.args...))  
-        if !($(rot_type) <: FixedArray)  # need this for quaternions
-            call{T}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = convert(Vec{$(numel(rot_type)),T}, X)
-            call(::Type{Vec}, X::$(rot_type)) = convert(Vec, X)
-        elseif ($(rot_type) <: Mat)
-            # Fixed size arrays have changed call so it no defaulting to convert, so fix it here and hope nothing breaks elsewhere...
-            call{T <: $(rot_type)}(::Type{Vec}, X::T) = convert(Vec, X)
-            call{T <: Real}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = convert(Vec{$(numel(rot_type)),T}, X)
+            # convert to a fixed size a vector
+            convert{T <: $(rot_type)}(::Type{Vec}, X::T) = convert(Vec{$(numel(rot_type)), eltype(T)}, X)
+            convert{T <: Real}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = Vec{$(numel(rot_type)),T}($(output_expr.args...))  
+            call{T <: Vec, U <:  $(rot_type)}(::Type{T}, X::U) = convert(T, X)
+            
+
+            # convert to mutable vector
+            convert{T <: $(rot_type)}(::Type{Vector}, X::T) = convert(Vector{eltype(T)}, X)
+            convert{T <: Real}(::Type{Vector{T}}, X::$(rot_type)) = vcat($(output_expr.args...))
+
+        else
+            call{T <: Real}(::Type{Vector{T}}, X::$(rot_type)) = vcat($(output_expr.args...)) 
         end
 
-        # convert to mutable vector
-        convert{T <: $(rot_type)}(::Type{Vector}, X::T) = convert(Vector{eltype(T)}, X)
-        convert{T <: Real}(::Type{Vector{T}}, X::$(rot_type)) = vcat($(output_expr.args...))
-
-        # convert from a fixed size a vector
-        function convert{rT <: $(rot_type), U <: Real}(::Type{rT}, X::Vec{$(numel(rot_type)), U})
-            oT = add_params(rT, U)                                                  # output type
-            T = eltype(oT)                                                          # output element type
-            oT($(construct_expr.args...))
-        end
         
-        # convert from mutable vector
-        function convert{rT <: $(rot_type), U <: Real}(::Type{rT}, X::Vector{U})
-            (length(X)) == $(numel(rot_type)) || error(@sprintf("Input vector should have length %i", $(numel(rot_type))))
-            oT = add_params(rT, U)
-            T = eltype(oT)
-            oT($(construct_expr.args...))
+
+        # convert to an ntuple
+        convert{T <: $(rot_type)}(::Type{Tuple}, X::T) = convert(NTuple{$(numel(rot_type)), eltype(T)}, X)
+        convert{T <: $(rot_type)}(::Type{NTuple}, X::T) = convert(NTuple{$(numel(rot_type)), eltype(T)}, X)
+        convert{T <: Real}(::Type{NTuple{$(numel(rot_type)), T}}, X::T) = $(output_expr.args)
+
+        # This can't be good...
+        if ($(rot_type) <: Mat)
+
+            # convert to a fixed size vector    
+            convert{T <: $(rot_type)}(X::T, ::Type{Vec}) = convert(Vec{$(numel(rot_type)), eltype(T)}, X)
+            convert{T <: Real}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = Vec{$(numel(rot_type)),T}($(output_expr.args...))
+            call{T <: $(rot_type)}(::Type{Vec}, X::T) = convert(Vec{$(numel(rot_type)), eltype(T)}, X)
+            call{T <: Real}(::Type{Vec{$(numel(rot_type)),T}}, X::$(rot_type)) = convert(Vec{$(numel(rot_type)),T}, X)
+
+            # convert to a mutable vector    
+            convert{T <: $(rot_type)}(::Type{Vector}, X::T) = convert(Vector{eltype(T)}, X)
+            convert{T <: Real}(::Type{Vector{T}}, X::$(rot_type)) = vcat($(output_expr.args...))
+            call{T <: $(rot_type)}(::Type{Vector}, X::T) = convert(Vector{eltype(T)}, X)
+            call{T <: Real}(::Type{Vector{T}}, X::$(rot_type)) = convert(Vector{T}, X)
+
         end
 
-        # have to overload some call methods in FixedSizeArrays here...
-        if ($(rot_type) <: FixedSizeArrays.FixedArray)  
-            call{T <: $(rot_type), U <: Real}(::Type{T}, v::Vec{$(numel(rot_type)), U}) = convert(T, v)
-            call{T <: $(rot_type), U <: Real}(::Type{T}, v::Vector{U}) = convert(T, v)      
-        end
-
-        # Quaternions has a weird constructor 3 element vector constructor 
-        if ($(rot_type) == Quaternion)
-            # luckily the below will be called in preference to call{T}(::Type{Quaternion}, X::Vector)        
-            call{T}(::Type{Quaternion}, X::Vector{T}) = length(X) == 4 ? convert(Quaternion, X) : (length(X) == 3 ? Quaternion(0, X[1], X[2], X[3]) : error("Vector should have 3 or 4 elements"))
-        end
     end
 end
 
@@ -372,7 +446,7 @@ function add_methods(rot_type)
     append!(qb.args, Rotations.add_constructors(rot_type).args)    
 
     # add the vector conversion code
-    append!(qb.args, Rotations.add_vector_conversions(rot_type).args)  
+    append!(qb.args, Rotations.add_export_conversions(rot_type).args)  
 
     # NaN checks
     append!(qb.args, Rotations.add_nan_check(rot_type).args)

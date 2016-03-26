@@ -176,6 +176,7 @@ type EulerXZX <: ProperEulerOrder end
 # Euler (Tait Byran) Angles
 ##############################
 
+macro DefaultEulerOrder(); EulerZXY; end
 
 """
 EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
@@ -190,6 +191,9 @@ immutable EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} <: FixedVecto
 	theta_x::T
 	theta_y::T
 	theta_z::T
+    #function EulerAngles(X::NTuple{3, T}) #FSA:: needs to be like this to keep constructor code sane, but I cant make it work so crazy it is
+    #   new{@DefaultEulerOrder(), T}(X[1], X[2], X[3])
+    #end
 end
 
 
@@ -197,6 +201,7 @@ end
 # Proper Euler Angles
 ##############################
 
+macro DefaultProperEulerOrder(); EulerXZX; end
 
 """
 ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} where order specifies the extrinsic (axes of rotation are fixed) order of rotations.
@@ -211,4 +216,7 @@ immutable ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} <: Fi
 	theta_1::T
 	theta_2::T
 	theta_3::T
+    #function ProperEulerAngles(X::NTuple{3, T}) #FSA:: needs to be like this to keep constructor code sane, but I cant make it work so crazy it is
+    #   new{@DefaultProperEulerOrder(), T}(X[1], X[2], X[3])
+    #end
 end

@@ -95,10 +95,10 @@ end
 
 # println("\n\n\n********************************\nVector conversion checks\n********************************\n")
 R = RotMatrix(eye(3))
-eltypes = subtypes(AbstractFloat)  # only abstarct floats are supported by all
+eltypes = subtypes(AbstractFloat)  # only abstract floats are supported by all
 for rT in rot_types
 
-    # println("$(rT)")
+    #println("$(rT)")
     rot_var = rT(R)
     
     # export to immutable
@@ -120,7 +120,7 @@ for rT in rot_types
     # test typed stuff
     for eT in eltypes
         
-        # println("$(rT): $(eT)")
+        #println("$(rT): $(eT)")
         
         # export to immutable
         ivt = Vec{Rotations.numel(rT), eT}(rot_var)
@@ -152,7 +152,7 @@ end
 # Test conversions between rotation types
 #########################################################################
 
-# println("\n\n\n********************************\nRotation conversion checks\n********************************\n")
+#println("\n\n\n********************************\nRotation conversion checks\n********************************\n")
 
 # test random round trip conversions
 repeats = 1000
@@ -162,7 +162,7 @@ for rT_in in rot_types
 
     for rT_out in rot_types
 
-        # println("$(rT_in) - > $(rT_out)")
+        #println("$(rT_in) - > $(rT_out)")
 
         # and each test
         #fcount = 0
@@ -176,7 +176,7 @@ for rT_in in rot_types
             Xd = convert_rotation(rT_in, convert_rotation(rT_out, X))
 
             # compare rotations before and after the round trip
-            Rout = RotMatrix(X) * RotMatrix(Xd)'  # should be the ident
+            Rout = RotMatrix(X) * RotMatrix(Xd)'  # should be the identity
             rd = vecnorm(eye3 - Rout)
             @test rd <= thresh
             #fcount += (rd > thresh)
