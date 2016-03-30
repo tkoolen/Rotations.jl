@@ -45,30 +45,40 @@ This package assumes [active (right handed) rotations](https://en.wikipedia.org/
 
 
 
-### Rotation Conversions
-
-The `convert_rotations` function and copy constructor are used to transform between different rotation parameterizations, e.g.
+### Example Usage
 
 ```julia
 
-    # create a matrix
+    # create a rotation matrix
     R = RotMatrix(eye(3))
 
-    # convert to Euler Angles (using the default ordering scheme)
-    ea = convert_rotation(EulerAngles, R)
+    # create a point
+    using FixedSizeArrays
+    X = Vec{3, Float64}(1,2,3)
 
-    # convert to Euler Angles specifying the order
-    ea = convert_rotation(EulerAngles{Rotations.EulerXYZ}, R)
+    # convert to Euler Angles (using the default ordering scheme)
+    ea = EulerAngles(R)
+    Xo = ea * X
+
+    # convert to Euler Angles specifying the angle order
+    ea = EulerAngles{Rotations.EulerXYZ}(R)
+    Xo = ea * X
+
+    # convert to proper Euler Angles (using the default ordering scheme)
+    pea = ProperEulerAngles(R)
+    Xo = pea * X
+
+    # convert to proper Euler Angles specifying the angle order
+    ea = ProperEulerAngles{Rotations.EulerXYX}(R)
+    Xo = ea * X
 
     # a Quaternion
-    q = convert_rotation(Quaternion, R)
-
-    # or equivalently
     q = Quaternion(R)
+    Xo = q * X
 
-    # change the element type while we're at it
-    q = convert_rotation(Quaternion{Float32}, R)
-
+    # Stereo graphic projection of a quaternion (recommended for optimization problems)
+    spq = SpQuat(R)
+    Xo = spq * X
 
 ```
 
@@ -76,11 +86,8 @@ The `convert` function is used to convert element types for the same parameteriz
 
 ```julia
 
-    # create a matrix
-    Rf64 = RotMatrix(eye(3))
-
-    # convert to a different element type
-    Rf32 = convert(RotMatrix{Float32}, Rf64)
+    spq_f64 = SpQuat(0.0,0.0,0.0)
+    spq_32 = convert(SpQuat{Float32}, spq_f64)
 
 ```
 
@@ -104,4 +111,50 @@ All parameterizations can be converted to and from mutable / immutable vectors, 
     q2 = Quaternion(v_immutable)
 
 ```
+
+
+### Why use immutables / FixedSizeArrays?
+
+They're faster (BLAS isn't great for 3x3 matrices) and don't need preallocating:
+
+```julia
+
+    function benchmark(n::Int=1_000_000)
+
+        function rotate_mutable(R, X, n)
+            Xb, Xo = zeros(3), zeros(3)
+            for i = 1:n
+                A_mul_B!(Xb, R, X)
+                # @inbounds Xo[1] += Xb[1]; @inbounds Xo[2] += Xb[2]; @inbounds Xo[3] += Xb[3];  
+            end
+            return Xo
+        end   
+
+        function rotate_immutable(R, X, n)
+            Xo = Vec(0.0,0,0)
+            for i = 1:n
+                Xb = R * X
+                # Xo += Xb
+            end
+            return Xo
+        end
+
+        # Initialise
+        R_mute, R_immute = eye(3), RotMatrix(eye(3))
+        X_mute, X_immute = zeros(3), Vec(0.0,0,0)
+
+        # and test
+        rotate_mutable(R_mute, X_mute, 1)
+        println("Rotating using mutables")
+        @time Xo = rotate_mutable(R_mute, X_mute, n)
+
+        rotate_immutable(R_immute, X_immute, 1)
+        println("Rotating using immutables")
+        @time Xo = rotate_immutable(R_immute, X_immute, n)
+
+    end
+
+```
+
+
 
