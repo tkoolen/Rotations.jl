@@ -18,11 +18,7 @@ rotate_point{T <: RotationTypes, U <: AbstractFloat}(R::T, X::Vector{U}) = rotat
 rotate_point{T <: AbstractFloat}(R::RotMatrix{T}, X::Vec{3,T}) =   R * X
 
 # cases with unmatched types
-rotate_point{T <: AbstractFloat, U <: AbstractFloat}(R::RotMatrix{T}, X::Vec{3,U}) =  convert(RotMatrix{U}, R) * X
-
-# ending up with X as Ints seems inevitable
-rotate_point{T <: AbstractFloat, U <: Integer}(R::RotMatrix{T}, X::Vec{3,U}) = R * convert(Vec{3, T}, X)
-
+rotate_point{T <: AbstractFloat, U <: AbstractFloat}(R::RotMatrix{T}, X::Vec{3,U}) =  R * X  # should this have return type U?
 
 #=
 

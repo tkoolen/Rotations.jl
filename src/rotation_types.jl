@@ -3,6 +3,10 @@
 # a default element type
 macro DefaultElType(); Float64; end  # need this to be a macro for type stability in type_methods.jl promote_type_sp functions
 
+# some trait style stuff
+numel{T}(::Type{T}) = length(fieldnames(T))    # function to get the number of elements in each parameterization
+n_params{T}(::Type{T}) = length(T.parameters)  # the number of template parameters
+
 ###################################################
 # Rotation matrix (typeofalias of Mat{3,3,Float64})
 # N.B. all other parameterizations T should implement
@@ -12,7 +16,7 @@ macro DefaultElType(); Float64; end  # need this to be a macro for type stabilit
 @doc """
 A type alias for rotation matrices (alias of Mat{3,3,T})
 """ ->
-typealias RotMatrix{T <: AbstractFloat}   Mat{3,3,T}
+typealias RotMatrix{T <: Real}   Mat{3,3,T}
 #immutable RotMatrix{T <: AbstractFloat} <: FixedArray{T,2,Tuple{3,3}} # this would be better but much more effort without an implicit conversion
 #    _::Tuple{Tuple{T, T, T}, 
 #             Tuple{T, T, T},
@@ -34,18 +38,18 @@ convert_rotation{T, U}(::Type{RotMatrix{T}}, X::RotMatrix{U}) = convert(RotMatri
 # default parameters
 default_params{T <: RotMatrix}(::Type{T}) = (@DefaultElType(), ) 
 
+numel(::Type{RotMatrix}) = 9     # special case
+n_params(::Type{RotMatrix})  = 1 # The behaviour of length(RotMatrix.parameters) seems unstable...
+
+
 
 ###################################################
 # Quaternions
 # (Quaternions are defined in Quaternions.jl)
 ###################################################
 
-# element type is handy
-eltype(::Type{Quaternion}) = Any
-eltype{T}(::Type{Quaternion{T}}) = T
-
 # add an indexing scheme
-getindex(X::Quaternion, idx::Integer) = getfield(X, idx)
+# getindex(X::Quaternion, idx::Integer) = getfield(X, idx)
 
 # an extra constructor
 call{T}(::Type{Quaternion{T}}, a::Real, b::Real, c::Real, d::Real) = Quaternion(T(a), T(b), T(c), T(d))
@@ -68,6 +72,8 @@ convert{T, U}(::Type{Quaternion{T}}, X::Vec{3,U}) = Quaternion(T(0), T(X[1]), T(
 # default parameters
 default_params{T <: Quaternion}(::Type{T}) = (@DefaultElType(), ) 
 
+# Quaternions have an extra bool field that type_methods.jl doesn't want to know about
+numel(::Type{Quaternion}) = 4 
 
 
 
@@ -92,14 +98,12 @@ See:
             uses the solution with ||SpQuat|| <= 1 
 
 """ ->
-immutable SpQuat{T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+immutable SpQuat{T <: Real}
     x::T
     y::T
     z::T
-    function SpQuat(X::NTuple{3, T}) #FSA:: needs to be like this to keep constructor code sane
-       new{T}(X[1], X[2], X[3])
-    end
 end
+
 
 # convert to a known one
 convert_rotation{T <: Real}(::Type{Quaternion{T}}, spq::SpQuat{T}) = spquat_to_quat(spq)
@@ -132,14 +136,11 @@ rot_angle(X::SpQuat) = rot_angle(Quaternion(X))
 ###################################################
 
 
-immutable AngleAxis{T <: AbstractFloat}  <: FixedVectorNoTuple{4, T}
+immutable AngleAxis{T <: Real}  
     theta::T
     axis_x::T
     axis_y::T
     axis_z::T
-    function AngleAxis(X::NTuple{4, T}) #FSA:: needs to be like this to keep constructor code sane
-       new{T}(X[1], X[2], X[3], X[4])
-    end
 end
 
 # define its interaction with other angle representations

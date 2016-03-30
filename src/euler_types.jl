@@ -187,13 +187,10 @@ Fields:
 	theta_y   - Angle to rotate about the y axis (radians)
 	theta_z   - Angle to rotate about the z axis (radians)
 """
-immutable EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+immutable EulerAngles{Order <: TaitByranOrder, T <: Real} 
 	theta_x::T
 	theta_y::T
 	theta_z::T
-    #function EulerAngles(X::NTuple{3, T}) #FSA:: needs to be like this to keep constructor code sane, but I cant make it work so crazy it is
-    #   new{@DefaultEulerOrder(), T}(X[1], X[2], X[3])
-    #end
 end
 
 
@@ -212,11 +209,8 @@ Fields:
 	theta_2   - angle to rotate about the second axis in the order (radians)
 	theta_3   - angle to rotate about the final axis in the order (radians)
 """
-immutable ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat} <: FixedVectorNoTuple{3, T}
+immutable ProperEulerAngles{Order <: ProperEulerOrder, T <: Real} 
 	theta_1::T
 	theta_2::T
 	theta_3::T
-    #function ProperEulerAngles(X::NTuple{3, T}) #FSA:: needs to be like this to keep constructor code sane, but I cant make it work so crazy it is
-    #   new{@DefaultProperEulerOrder(), T}(X[1], X[2], X[3])
-    #end
 end

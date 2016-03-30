@@ -4,9 +4,7 @@ using FixedSizeArrays
 using Quaternions
 using Rotations
 
-
-# reset this for testing
-srand(0)
+verbose_rot_test = false
 
 
 numel{T <: Rotations.RotationTypes}(X::T) = Rotations.numel(Rotations.strip_eltype(T))
@@ -24,12 +22,30 @@ macro contents_approx_eq(a, b)
         end
     end
 end
+macro contents_approx_eq_eps(a, b, eps)
+    quote
+        n = numel($(esc(a)))
+        @test n == numel($(esc(b)))
+        for i = 1:n
+            ai, bi = getindex($(esc(a)), i), getindex($(esc(b)), i)
+            @test typeof(ai) == typeof(bi)
+            @test_approx_eq_eps ai bi $(esc(eps))
+        end
+    end
+end
+
 
 # a macro to test if tow types are approximatey equal
 macro types_approx_eq(a, b)
     quote
         @test typeof($(esc(a))) == typeof($(esc(b)))
         @contents_approx_eq($(esc(a)), $(esc(b)))
+    end
+end
+macro types_approx_eq_eps(a, b, eps)
+    quote
+        @test typeof($(esc(a))) == typeof($(esc(b)))
+        @contents_approx_eq_eps($(esc(a)), $(esc(b)), $(esc(eps)))
     end
 end
 
@@ -79,9 +95,9 @@ null_rotation{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD, Floa
 
 # Do no rotation
 R = RotMatrix(eye(3))
-# println("********************************\nIndentity checks\n********************************\n")
+verbose_rot_test ? println("********************************\nIndentity checks\n********************************\n") : nothing
 for rT in rot_types
-    # println(rT)
+    verbose_rot_test ? println(rT) : nothing
     rot_var = rT(R)
     null_var = null_rotation(rT)
     @types_approx_eq(rot_var, null_var)
@@ -93,12 +109,12 @@ end
 #########################################################################
 
 
-# println("\n\n\n********************************\nVector conversion checks\n********************************\n")
+verbose_rot_test ? println("\n\n\n********************************\nVector conversion checks\n********************************\n") :  nothing
 R = RotMatrix(eye(3))
-eltypes = subtypes(AbstractFloat)  # only abstract floats are supported by all
+eltypes = subtypes(AbstractFloat)  # test different AbstractFloats
 for rT in rot_types
 
-    #println("$(rT)")
+    verbose_rot_test ? println("$(rT)") : nothing
     rot_var = rT(R)
     
     # export to immutable
@@ -152,17 +168,18 @@ end
 # Test conversions between rotation types
 #########################################################################
 
-#println("\n\n\n********************************\nRotation conversion checks\n********************************\n")
+verbose_rot_test ? println("\n\n\n********************************\nRotation conversion checks\n********************************\n") : nothing
 
 # test random round trip conversions
 repeats = 1000
 thresh = 1e-6
 eye3 = @fsa([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+srand(0)
 for rT_in in rot_types
 
     for rT_out in rot_types
 
-        #println("$(rT_in) - > $(rT_out)")
+        verbose_rot_test ? println("$(rT_in) - > $(rT_out)") : nothing
 
         # and each test
         #fcount = 0
@@ -189,54 +206,47 @@ end
 
 
 
-###
-# For bench marking the set_subnormal method of dealing with subnormal numbers
-# the result of this is that playing with the subnormal mode is slow
-function testsubnormal(n::Int=10000000)
+#########################################################################
+# Actually rotate some stuff
+#########################################################################
 
-    function rottoeuler2{T}(::Type{ProperEulerAngles{Rotations.EulerXYX}}, R::RotMatrix{T})
+verbose_rot_test ? println("\n\n\n********************************\nTesting Rotations\n********************************\n") : nothing
 
-        # temporarily dis allow sub normal numbers
-        sn = get_zero_subnormals();
-        set_zero_subnormals(true);
-	    t1 = atan2(R[2, 1], -R[3, 1])  
-        set_zero_subnormals(sn);
-	    
-        ct1, st1 = cos(t1), sin(t1)
+# a random rotation
+repeats = 1000
+srand(0)
 
-	    ProperEulerAngles{Rotations.EulerXYX,T}(
-		    T(t1),
-		    T(atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1])),
-		    T(atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
-		    )
+# rotate using each different parameterization
+for rT in rot_types
+    
+    verbose_rot_test ? println("Rotating using the $(rT) parameterization") : nothing
+
+    for i = 1:repeats
+
+        Rm = RotMatrix(nquatrand())
+        X = Vec{3, Float64}(randn(), randn(), randn())  # a point to rotate
+        Xo = Rm * X  # Fixed size arrays better get this right
+    
+        R = rT(Rm)  # convert R to this formulation
+        Xo_t = R * X
+        @types_approx_eq_eps(Xo_t, Xo, 1e-10)
+
     end
-
-    function calc1(R, n)
-        for i = 1:n
-            ea = Rotations.rottoeuler(ProperEulerAngles{Rotations.EulerXYX}, R)
-        end
-    end
-
-    function calc2(R, n)
-        for i = 1:n
-            ea = rottoeuler2(ProperEulerAngles{Rotations.EulerXYX}, R)
-        end
-    end
-
-
-    # a random rotation for testing
-    q = nquatrand()
-    R = RotMatrix(q)
-
-
-    # and test
-    println("DONT set subnormals to zero")
-    @time calc1(R, n)
-
-    println("DO set subnormals to zero")
-    @time calc2(R, n)
-
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
