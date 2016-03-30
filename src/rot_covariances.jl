@@ -1,4 +1,4 @@
-@doc """
+"""
 
 Function to convert a covariance matrix containing one rotation parameterization to another:
 
@@ -6,7 +6,7 @@ Inputs:
 
     tfunc     - transformation function, should take a Vector with length size(cX, 1) as an input and return the transformed state vector
 
-    cX        - covariance matrix 
+    cX        - covariance matrix
 
     xbar      - mean X in the input space (set = nothing to enforce zero mean in input and output)
 
@@ -17,12 +17,12 @@ Inputs:
 
 Experimental - This is not a fast implementation
 
-""" ->
+"""
 function convert_covariance{T, U, V}(tfunc, cX, xbar::V=zeros(size(cX,1)), ::Type{T}=Any, ::Type{U}=Any)
 
     # generate the sigma points
     (sigmas, weights) = sigma_points(cX, xbar)
-    
+
     # get the output size
     siz = ((T == Any) ? length(tfunc(sigmas[:,1])) : size(T,1))::Int
 
@@ -36,7 +36,7 @@ function convert_covariance{T, U, V}(tfunc, cX, xbar::V=zeros(size(cX,1)), ::Typ
     xbar_out = (V == Void) ? nothing : vec(mean(sigma_trans,2))
 
     # convert the sigma points back into a covariance
-    cX = sigma_point_cov(sigma_trans, weights, xbar_out)  
+    cX = sigma_point_cov(sigma_trans, weights, xbar_out)
     if (T != Any)
         cX = T(cX)::T
     end
@@ -60,7 +60,7 @@ function sigma_points{V}(cX, xbar::V=nothing)
     n = size(cX,1)
 
     W0 = -0.2
-    R = full(chol((n/(1-W0)) * cX, Val{:L}))::Matrix{Float64} 
+    R = full(chol((n/(1-W0)) * cX, Val{:L}))::Matrix{Float64}
 
     # weights
     weights = zeros(2*n+1)
@@ -91,7 +91,7 @@ function sigma_point_cov(sigma_points, weights, xbar=nothing)
     end
     cov = sigma_points * (sigma_points' .* weights)  # maybe better than the above (less copy but mult across rows)
 
-    #This is poop!! Force covariance matrix symmetric. 
+    #This is poop!! Force covariance matrix symmetric.
     cov = 0.5*(cov + cov')
     return cov
 
@@ -110,7 +110,7 @@ function test_dist(std=10.0, n::Int=100_000)
     sX_euler = chol(cX_euler, Val{:L})
     ea_vec = [EulerAngles(sX_euler * randn(size(sX_euler, 1))) for i in 1:n]
 
-    # convert them    
+    # convert them
     x, y, z = zeros(n), zeros(n), zeros(n)
     for (i, ea) in enumerate(ea_vec)
         spq = SpQuat(ea)
@@ -128,7 +128,4 @@ function test_dist(std=10.0, n::Int=100_000)
 
 end
 =#
-
-
-
 

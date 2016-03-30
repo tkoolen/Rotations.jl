@@ -1,7 +1,23 @@
 # define maths function for rotations types
-import Base.(*), Base.(.*), Base.(-)
+import Base: (*), .*, (-), (.-), (+), (.+), (/), (./)
+
+
 
 function add_maths(rot_type)
+
+    #
+    # Define the operations to build
+    #
+
+    # unary expression
+    unary_ops = [:(-)]
+
+    # binary expressions below
+    scalar_ops = [:(*), :(+), :(-), :(/)]
+
+    vector_ops = [:(.*), :(.+), :(.-), :(./)]
+
+    type_ops = [:(.+), :(.-), :(.*), :(./)]  # return a Vec
 
     # create an expression for a tuple X[1], X[2], etc...
     fields = fieldnames(rot_type)
@@ -9,69 +25,102 @@ function add_maths(rot_type)
     # the code block we are creating
     qb = quote; end
 
-    # allow rotating a Vec{3, ...} using *    
-    if !(rot_type <: FixedArray)
-        qn = quote
-            (*){T <: Real}(R::$(rot_type), X::Vec{3,T}) = rotate_point(R, X)
-        end
-        append!(qb.args, qn.args)
+    #
+    # allow rotating a Vec{3, ...} using *
+    #
+    qn = quote
+        (*){T <: Real}(R::$(rot_type), X::Vec{3,T}) = rotate_point(R, X)
     end
-    
+    append!(qb.args, qn.args)
 
-    # allow multiplcation by a scalar (might make sense with small angle approximations)
-    if !(rot_type <: FixedArray) && (rot_type != Quaternion)  
 
-        # build the rhs epxression
-        rhs_expr = :(())
-        append!(rhs_expr.args, [:(s * X.$(field)) for field in fields[1:numel(rot_type)]])
+    #
+    # Build unary ops
+    #
+    for op in unary_ops
+
+        # build the rhs expression
+        exprs = [:($(op)(X.$(fields[i]))) for i in 1:numel(rot_type)]
 
         # form the whole expression
         qn = quote
-            (*){T <: $(rot_type), U <: Real}(X::T, s::U) = strip_eltype(T)($(rhs_expr.args...))
-            (*){T <: $(rot_type), U <: Real}(s::U, X::T) = strip_eltype(T)($(rhs_expr.args...))
+            ($(op)){T <: $(rot_type)}(X::T) = T($(exprs...))
         end
         append!(qb.args, qn.args)
-    
+
     end
 
+    #
+    # Build operations with scalars
+    #
+    for op in scalar_ops
 
-    # allow .* multiplcation by a Vec for thw same reason as me have multiplication by a scalar
-    if !(rot_type <: FixedArray) && (rot_type != Quaternion)  
 
         # build the rhs epxression
-        rhs_expr = :(())
-        append!(rhs_expr.args, [:(s[$(i)] * X.$(fields[i])) for i in 1:numel(rot_type)])
+        exprs1 = [Expr(:($(op)), :(s), :(X.$(field))) for field in fields[1:numel(rot_type)]]
+        exprs2 = [Expr(:($(op)), :(X.$(field)), :(s)) for field in fields[1:numel(rot_type)]]
 
         # form the whole expression
         qn = quote
-            (.*){T <: $(rot_type), U <: Real}(X::T, s::Vec{$(numel(rot_type)), U}) = strip_eltype(T)($(rhs_expr.args...))
-            (.*){T <: $(rot_type), U <: Real}(s::Vec{$(numel(rot_type)), U}, X::T) = strip_eltype(T)($(rhs_expr.args...))
+            ($(op)){T <: $(rot_type), U <: Real}(s::U, X::T) = strip_eltype(T)($(exprs1...))
+            ($(op)){T <: $(rot_type), U <: Real}(X::T, s::U) = strip_eltype(T)($(exprs2...))
         end
         append!(qb.args, qn.args)
-    
+
     end
 
-    # allow unary -
-    if !(rot_type <: FixedArray) && (rot_type != Quaternion)  
+
+    #
+    # Build operations with vectors
+    #
+    for op in vector_ops
 
         # build the rhs epxression
-        rhs_expr = :(())
-        append!(rhs_expr.args, [:(-X.$(fields[i])) for i in 1:numel(rot_type)])
+        exprs1 = [Expr(:($(op)), :(s[$(i)]), :(X.$(fields[i]))) for i in 1:numel(rot_type)]
+        exprs2 = [Expr(:($(op)), :(X.$(fields[i])), :(s[$(i)])) for i in 1:numel(rot_type)]
 
         # form the whole expression
         qn = quote
-            (-){T <: $(rot_type)}(X::T) = T($(rhs_expr.args...))
+            ($(op)){T <: $(rot_type), U <: Real}(s::Vec{$(numel(rot_type)), U}, X::T) = strip_eltype(T)($(exprs1...))
+            ($(op)){T <: $(rot_type), U <: Real}(X::T, s::Vec{$(numel(rot_type)), U}) = strip_eltype(T)($(exprs2...))
         end
         append!(qb.args, qn.args)
-    
+
+    end
+
+    #
+    # Build operations on themselves
+    #
+    for op in type_ops
+
+        # build the rhs epxression
+        exprs = [Expr(:($(op)), :(X1.$(field)), :(X2.$(field))) for field in fields[1:numel(rot_type)]]
+
+        # form the whole expression
+        qn = quote
+            function ($(op)){T1 <: $(rot_type), T2 <: $(rot_type)}(X1::T1, X2::T2)
+                @assert strip_eltype(T1)==strip_eltype(T2) "Different euler angle orders"
+                Vec($(exprs...))
+            end
+        end
+        append!(qb.args, qn.args)
+
     end
 
     return qb
 end
 
 
+for rt in RotTypeList
 
+    # println("type: $(rt), vars: $(numel(rt))")
 
-
-
+    # add some basic maths
+    if !(rt <: RotMatrix) && (!(rt <: Quaternion))
+        eval(add_maths(rt))
+    elseif (rt <: Quaternion)
+        # allow rotation via * with quaternions
+        eval(:((*){T <: Real}(R::$(rt), X::Vec{3,T}) = rotate_point(R, X)))
+    end
+end
 

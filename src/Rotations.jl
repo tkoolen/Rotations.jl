@@ -9,40 +9,36 @@ using Quaternions  # TODO: Switch to the UnitQuaternions package? https://github
 import Base.convert, Base.mean, Base.eltype, Base.isnan, Base.length, Base.call, Base.getindex, Base.inv, Base.*
 import Quaternions.Quaternion
 
+src_files = ["rotation_types", "rotation_conversions", "euler_conversions", "type_methods", "rotate", "quaternion_ops", "math_funcs", "rot_covariances"]
+for file in src_files
+    #println("$(file).jl")
+    include("$(file).jl")
+end
+
 
 export
 
-        # Euler angle ordering 
+        # Euler angle ordering
         EulerOrder,
         EulerZXY,
 
         # representations
-        RotMatrix,  
-        SpQuat,     
-        AngleAxis,  
+        RotMatrix,
+        SpQuat,
+        AngleAxis,
         EulerAngles,         # order is in the type specification
         ProperEulerAngles,   # order is in the type specification
 
         # quaternions as well
         Quaternion,
 
-        # to convert between representations
-        convert_rotation,
-        rotate_point,
+        # retrieve the euler order
+        euler_order
 
         # check validity of the rotation
         valid_rotation,
 
         # extra quaternion operations
-        rot_angle,  # N.B. angle(Quaternions) is different and defined in Quaternions
-
-        # Misc
-        projective                              # convert a rotation matrix into a transformation matrix
-
-
-src_files = ["rotation_types", "type_methods", "rotation_conversions", "euler_conversions", "rotate", "quaternion_ops", "rot_covariances"]
-for file in src_files 
-    include("$(file).jl")
-end
+        rot_angle  # N.B. angle(Quaternions) is different and defined in Quaternions
 
 end # end rotations

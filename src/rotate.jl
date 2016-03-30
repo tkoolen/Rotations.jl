@@ -1,48 +1,83 @@
 
 #
 # definition for rotating points
-# 
+#
 
 """
 Rotate the point X using the rotation parameters specified in R (i.e. R * X)
 
-rotate_point(R::T, X)
+rotate_point(R, X)
 
 """
-rotate_point{T <: RotationTypes, U <: AbstractFloat}(R::T, X::Vec{3,U})  =  rotate_point(RotMatrix(R), X)    # generic version, go through a rotation matrix
+@inline rotate_point{T <: RotationTypes, U <: Real}(R::T, X::Vec{3,U})  =  rotate_point(RotMatrix(R), X)    # generic version, go through a rotation matrix
 
 # in case of mutable input (not the recomended form)
-rotate_point{T <: RotationTypes, U <: AbstractFloat}(R::T, X::Vector{U}) = rotate_point(R, Vec{3,U}(X[1], X[2], X[3]))   # generic version, go through a rotation matrix
+@inline rotate_point{T <: RotationTypes, U <: Real}(R::T, X::Vector{U}) = rotate_point(R, Vec{3,U}(X[1], X[2], X[3]))   # generic version, go through a rotation matrix
 
 # cases where we start with a rotation matrix with matched element types
-rotate_point{T <: AbstractFloat}(R::RotMatrix{T}, X::Vec{3,T}) =   R * X
+@inline rotate_point{T <: Real}(R::RotMatrix{T}, X::Vec{3,T}) =   R * X
 
-# cases with unmatched types
-rotate_point{T <: AbstractFloat, U <: AbstractFloat}(R::RotMatrix{T}, X::Vec{3,U}) =  R * X  # should this have return type U?
+# this will actually throw
+# @inline rotate_point{T <: Real, U <: Real}(R::RotMatrix{T}, X::Vec{3,U}) =   R * X  # Revert to this once changes to FixedSizeArrays are in
+@inline rotate_point{T, U <: Real}(R::RotMatrix{T}, X::Vec{3,U}) = convert(RotMatrix{promote_type(T,U)}, R) * convert(Vec{3, promote_type(T,U)}, X)
 
-#=
+
 
 ################################################
 # Using Quaternions to do the rotation
 # (benchmark says not worth)
 ################################################
 
+#=
 rotate_point{T <: AbstractFloat}(q::Quaternion{T}, X::Vector{T}) = imag(q*Quaternion(X)*conj(q))
-function rotate_point{T <: AbstractFloat}(q::Quaternion{T}, X::Vec{3,T}) 
+function rotate_point{T <: AbstractFloat}(q::Quaternion{T}, X::Vec{3,T})
     qo = (q*Quaternion(X)*conj(q))
     return Vec{3,T}(qo.v1, qo.v2, qo.v3)
 end
 
+function benchmark_mutable(n::Int=1_000_000)
+    function rotate_mutable(R, X, n)
+        Xb, Xo = zeros(3), zeros(3)
+        for i = 1:n
+            A_mul_B!(Xb, R, X)
+            # @inbounds Xo[1] += Xb[1]; @inbounds Xo[2] += Xb[2]; @inbounds Xo[3] += Xb[3];
+        end
+        return Xo
+    end
+
+    function rotate_immutable(R, X, n)
+        Xo = Vec(0.0,0,0)
+        for i = 1:n
+            Xb = R * X
+            # Xo += Xb
+        end
+        return Xo
+    end
+
+    # Initialise
+    R_mute, R_immute = eye(3), RotMatrix(eye(3))
+    X_mute, X_immute = zeros(3), Vec(0.0,0,0)
+
+    # and test
+    rotate_mutable(R_mute, X_mute, 1)
+    println("Rotating using mutables")
+    @time Xo = rotate_mutable(R_mute, X_mute, n)
+
+    rotate_immutable(R_immute, X_immute, 1)
+    println("Rotating using immutables")
+    @time Xo = rotate_immutable(R_immute, X_immute, n)
+
+end
 
 
 using Quaternions
-function benchmark_rotation(n::Int=1_000_000)
+function benchmark_quaternion_rotation(n::Int=1_000_000)
 
     Qv = [nquatrand()::Quaternion{Float64} for i in 1:n]
 
     X = Vec{3,Float64}(randn(3))
     Xo = Vector{Vec{3,Float64}}(n)
-    
+
     function quat_test!(Xo, Qv, X)
         for (i, q) in enumerate(Qv)
             Xo[i] = rotate_point(q, X)
@@ -56,10 +91,13 @@ function benchmark_rotation(n::Int=1_000_000)
     end
 
     println("Rotate via RotMatrix")
+    rot_test!(Xo, Qv[1:1], X)
     @time rot_test!(Xo, Qv, X)
 
     println("Rotate via Quaternions")
+    quat_test!(Xo, Qv[1:1], X)
     @time quat_test!(Xo, Qv, X)
 
 end
 =#
+

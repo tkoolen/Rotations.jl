@@ -8,7 +8,7 @@ verbose_rot_test = false
 
 
 numel{T <: Rotations.RotationTypes}(X::T) = Rotations.numel(Rotations.strip_eltype(T))
-numel{T}(X::T) = (T <: FixedSizeArrays.FixedArray) || (T <: FixedSizeArrays.AbstractArray)  ? length(X) : error("numel undefined for input of type $(T)") 
+numel{T}(X::T) = (T <: FixedSizeArrays.FixedArray) || (T <: FixedSizeArrays.AbstractArray)  ? length(X) : error("numel undefined for input of type $(T)")
 
 # a macro to test if the contents of two containers are approximatley equal
 macro contents_approx_eq(a, b)
@@ -65,10 +65,10 @@ end
 # build a full list of rotation types including the different ordering schemas
 rot_types = Vector{Any}(0)
 for rT in Rotations.RotTypeList
-    if (Rotations.n_params(rT) == 2)
+    if (length(rT.parameters) == 2)
 
         # get the super type for the order parameter
-        order_type = super(Rotations.default_params(rT)[1])
+        order_type = super(Rotations.euler_order(rT))
         for order in subtypes(order_type)
             push!(rot_types, rT{order})
         end
@@ -82,11 +82,11 @@ end
 null_rotation(::Type{RotMatrix}) = RotMatrix(eye(3))
 null_rotation(::Type{Quaternion}) = Quaternion(1.0,0,0,0)
 null_rotation(::Type{AngleAxis}) = AngleAxis(0.0, 1.0, 0, 0)
-null_rotation(::Type{SpQuat}) = SpQuat(0.0,0.0,0.0)
-null_rotation(::Type{EulerAngles}) = EulerAngles(0.0,0.0,0.0)
-null_rotation(::Type{ProperEulerAngles}) = ProperEulerAngles(0.0,0.0,0.0)
-null_rotation{ORD}(::Type{EulerAngles{ORD}}) = EulerAngles{ORD, Float64}(0.0,0.0,0.0)
-null_rotation{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD, Float64}(0.0,0.0,0.0)
+null_rotation(::Type{SpQuat}) = SpQuat(0.0,0.0,0)
+null_rotation(::Type{EulerAngles}) = EulerAngles(0.0,0.0,0)
+null_rotation(::Type{ProperEulerAngles}) = ProperEulerAngles(0.0,0.0,0)
+null_rotation{ORD}(::Type{EulerAngles{ORD}}) = EulerAngles{ORD, Float64}(0.0,0.0,0)
+null_rotation{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD, Float64}(0.0,0.0,0)
 
 
 #########################################################################
@@ -116,18 +116,10 @@ for rT in rot_types
 
     verbose_rot_test ? println("$(rT)") : nothing
     rot_var = rT(R)
-    
-    # export to immutable
-    ivu = Vec(rot_var)
-    @contents_approx_eq(rot_var, ivu)
 
     # export to mutable
     mvu = Vector(rot_var)
     @contents_approx_eq(rot_var, mvu)
-
-    # import from immutable
-    rot_ivu = rT(ivu)
-    @types_approx_eq(rot_var, rot_ivu)
 
     # import from mutable
     rot_ivu = rT(mvu)
@@ -135,31 +127,23 @@ for rT in rot_types
 
     # test typed stuff
     for eT in eltypes
-        
-        #println("$(rT): $(eT)")
-        
-        # export to immutable
-        ivt = Vec{Rotations.numel(rT), eT}(rot_var)
-        ivc = convert(Vec{Rotations.numel(rT), eT}, ivu)
-        @types_approx_eq(ivt, ivc)
-    
+
+        verbose_rot_test ? println("$(rT): $(eT)") : nothing
+
         # export to mutable
         mvt = Vector{eT}(rot_var)
         mvc = convert(Vector{eT}, mvu)
         @types_approx_eq(mvt, mvc)
-
-        # import from immutable
-        rot_ivt = rT(ivt)
-        @contents_approx_eq_notype(rot_var, rot_ivt)
 
         # import from mutable
         rot_mvt = rT(mvt)
         @contents_approx_eq_notype(rot_var, rot_mvt)
 
         # and test the element conversion on the rotation parameterization directly
-        rot_c = convert(Rotations.add_params(rT, eT), rot_var)
-        @contents_approx_eq(rot_c, rot_mvt)
-
+        if (length(rT.parameters) == 1) || (TypeVar != typeof(rT.parameters[end-1]))
+            rot_c = convert(rT{eT}, rot_var)
+            @contents_approx_eq(rot_c, rot_mvt)
+        end
     end
 end
 
@@ -184,13 +168,13 @@ for rT_in in rot_types
         # and each test
         #fcount = 0
         for i = 1:repeats
-            
+
             # start with a random quaternion
             q = nquatrand()
-            X = convert_rotation(rT_in, q)
+            X = convert(rT_in, q)
 
             # round trip conversion
-            Xd = convert_rotation(rT_in, convert_rotation(rT_out, X))
+            Xd = convert(rT_in, convert(rT_out, X))
 
             # compare rotations before and after the round trip
             Rout = RotMatrix(X) * RotMatrix(Xd)'  # should be the identity
@@ -218,7 +202,7 @@ srand(0)
 
 # rotate using each different parameterization
 for rT in rot_types
-    
+
     verbose_rot_test ? println("Rotating using the $(rT) parameterization") : nothing
 
     for i = 1:repeats
@@ -226,37 +210,11 @@ for rT in rot_types
         Rm = RotMatrix(nquatrand())
         X = Vec{3, Float64}(randn(), randn(), randn())  # a point to rotate
         Xo = Rm * X  # Fixed size arrays better get this right
-    
+
         R = rT(Rm)  # convert R to this formulation
         Xo_t = R * X
         @types_approx_eq_eps(Xo_t, Xo, 1e-10)
 
     end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
