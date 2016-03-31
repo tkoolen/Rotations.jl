@@ -32,9 +32,6 @@ convert{T}(::Type{RotMatrix{T}}, X::RotMatrix{T}) = X
 Base.convert{U}(::Type{RotMatrix}, mat::Matrix{U}) = RotMatrix{U}(mat)
 Base.call{U}(::Type{RotMatrix}, mat::Matrix{U}) = convert(RotMatrix{U}, mat)
 
-# allow converting element types
-convert_rotation{T, U}(::Type{RotMatrix{T}}, X::RotMatrix{U}) = convert(RotMatrix{T}, X)
-
 # default parameters
 default_params{T <: RotMatrix}(::Type{T}) = (@DefaultElType(), ) 
 
@@ -58,16 +55,8 @@ call{T}(::Type{Quaternion{T}}, a::Real, b::Real, c::Real, d::Real) = Quaternion(
 convert_rotation{T <: Real}(::Type{RotMatrix{T}}, q::Quaternion{T}) = quat_to_rot(q)
 convert_rotation{T <: Real}(::Type{Quaternion{T}}, R::RotMatrix{T}) = rot_to_quat(R)
 
-# allow converting element types
-convert_rotation{T, U}(::Type{Quaternion{T}}, X::Quaternion{U}) = convert(Quaternion{T}, X)
-
 # more general
 convert_rotation{T,U}(::Type{T}, q::Quaternion{U}) = convert_rotation(T, quat_to_rot(promote_eltype(q, eltype(T))))  # go via the rotation representation
-
-# allow construction from a 3 element fixed size array as well, idk about this but it can be done with a Vector so...
-convert{T}(::Type{Quaternion}, X::Vec{3,T}) = Quaternion(0, X[1], X[2], X[3])
-convert{T}(::Type{Quaternion{T}}, X::Vec{3,T}) = Quaternion(T(0), X[1], X[2], X[3])
-convert{T, U}(::Type{Quaternion{T}}, X::Vec{3,U}) = Quaternion(T(0), T(X[1]), T(X[2]), T(X[3]))
 
 # default parameters
 default_params{T <: Quaternion}(::Type{T}) = (@DefaultElType(), ) 
@@ -113,9 +102,6 @@ convert_rotation{T <: Real}(::Type{SpQuat{T}}, q::Quaternion{T}) = quat_to_spqua
 convert_rotation{T <: Real}(::Type{SpQuat{T}}, R::RotMatrix{T}) = quat_to_spquat(convert_rotation(Quaternion{T}, R))
 convert_rotation{T,U}(::Type{T}, spq::SpQuat{U}) = convert_rotation(T, spquat_to_quat(promote_eltype(spq, T))) # this has template overload problems without the U????
 
-# allow converting element types
-convert_rotation{T, U}(::Type{SpQuat{T}}, X::SpQuat{U}) = convert(SpQuat{T}, X)
-
 # default parameters
 default_params{T <: SpQuat}(::Type{T}) = (@DefaultElType(), )
 
@@ -151,9 +137,6 @@ convert_rotation{T <: Real}(::Type{AngleAxis{T}}, q::Quaternion{T}) = quat_to_ar
 convert_rotation{T <: Real}(::Type{AngleAxis{T}}, R::RotMatrix{T}) = quat_to_arbaxis(convert_rotation(Quaternion{T}, R))
 convert_rotation{T,U}(::Type{T}, aa::AngleAxis{U}) = convert_rotation(T, arbaxis_to_quat(promote_eltype(aa, eltype(T))))  # this has template overload problems without the U????
 
-# allow converting element types
-convert_rotation{T, U}(::Type{AngleAxis{T}}, X::AngleAxis{U}) = convert(AngleAxis{T}, X)
-
 # default parameters
 default_params{T <: AngleAxis}(::Type{T}) = (@DefaultElType(), )
 
@@ -188,12 +171,9 @@ convert_rotation{T <: RotMatrix}(::Type{T}, ea::EulerAngles) = euler_to_rot(add_
 convert_rotation{T <: RotMatrix}(::Type{T}, ea::ProperEulerAngles) = euler_to_rot(add_params(RotMatrix, ea), ea)
 
 # Euler angles to other
-convert_rotation{T,ORD,U}(::Type{T}, ea::EulerAngles{ORD, U}) = convert_rotation(add_params(T, ea), euler_to_rot(RotMatrix, promote_eltype(ea, eltype(T))))
-convert_rotation{T,ORD,U}(::Type{T}, ea::ProperEulerAngles{ORD, U}) = convert_rotation(add_params(T, ea), euler_to_rot(RotMatrix, promote_eltype(ea, eltype(T))))
+convert_rotation{T}(::Type{T}, ea::EulerAngles) = convert_rotation(add_params(T, ea), euler_to_rot(RotMatrix, promote_eltype(ea, eltype(T))))
+convert_rotation{T}(::Type{T}, ea::ProperEulerAngles) = convert_rotation(add_params(T, ea), euler_to_rot(RotMatrix, promote_eltype(ea, eltype(T))))
 
-# allow converting element types
-convert_rotation{ORD, T, U}(::Type{EulerAngles{ORD, T}}, X::EulerAngles{ORD, U}) = convert(EulerAngles{ORD, T}, X)
-convert_rotation{ORD, T, U}(::Type{ProperEulerAngles{ORD, T}}, X::ProperEulerAngles{ORD, U}) = convert(ProperEulerAngles{ORD, T}, X)
 
 
 

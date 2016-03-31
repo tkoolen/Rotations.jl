@@ -143,7 +143,7 @@ function spquat_to_quat(spq::SpQuat)
     alpha2 = sum(spq.x .* spq.x + spq.y .* spq.y + spq.z .* spq.z)
     q = Quaternion((1.0-alpha2) / (alpha2 + 1), 2*spq.x   / (alpha2 + 1),   2*spq.y  / (alpha2 + 1), 2*spq.z / (alpha2 + 1), true)  
     q *= sign(q.s)
-    return q::Quaternion{Float64}
+    return q
 end
 
 """

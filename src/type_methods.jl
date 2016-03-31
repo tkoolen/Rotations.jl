@@ -88,9 +88,9 @@ function param_functions1{rot_type}(::Type{rot_type})
         add_eltype{T}(::Type{$(rot_type){T}}) = $(rot_type){T}
 
         # add the element type from another source when it's not present
-        add_eltype{T <: AbstractFloat}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
-        add_eltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){$(def_element)}  # need a float
-        add_eltype(::Type{$(rot_type)}, ::Type{Any}) = $(rot_type){$(def_element)}  # need a float
+        add_eltype{T <: Real}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){T}
+        add_eltype{T <: Int}(::Type{$(rot_type)}, ::Type{T}) = $(rot_type){$(def_element)}  # Ints suck
+        add_eltype(::Type{$(rot_type)}, ::Type{Any}) = $(rot_type){$(def_element)}          
         add_eltype{T}(::Type{$(rot_type)}, ::Type{T}) = add_eltype($(rot_type), eltype(T))
 
         # add the element type from another source when it is already present (ignore the other source)
@@ -105,8 +105,8 @@ function param_functions1{rot_type}(::Type{rot_type})
         #
         # Adding all parameters
         #
-        add_params{T <: $(rot_type)}(::Type{T}) = add_eltype(T)                  # by itself
-        add_params{T <: $(rot_type), U}(::Type{T}, ::Type{U}) = add_eltype(T, U) # from another source
+        add_params{T <: $(rot_type)}(::Type{T}) = add_eltype(T)                   # by itself
+        add_params{T <: $(rot_type), U}(::Type{T}, ::Type{U}) = add_eltype(T, U)  # from another source
         add_params{T <: $(rot_type), U}(::Type{T}, X::U) = add_params(T, U)       # from another source
 
         # output type with a promoted element types (N.B. should I call this something else
@@ -173,9 +173,9 @@ function param_functions2{rot_type}(::Type{rot_type})
         add_eltype{ORDER, T}(::Type{$(rot_type){ORDER, T}}) = $(rot_type){ORDER, T}
 
         # add the element type from another source when it's not present 
-        add_eltype{ORDER, T <: AbstractFloat}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
-        add_eltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, $(def_element)}  # need a float
-        add_eltype{ORDER}(::Type{$(rot_type){ORDER}}, ::Type{Any}) = $(rot_type){ORDER, $(def_element)}  # need a float
+        add_eltype{ORDER, T <: Real}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, T}
+        add_eltype{ORDER, T <: Int}(::Type{$(rot_type){ORDER}}, ::Type{T}) = $(rot_type){ORDER, $(def_element)}  # Ints suck
+        add_eltype{ORDER}(::Type{$(rot_type){ORDER}}, ::Type{Any}) = $(rot_type){ORDER, $(def_element)}  
         add_eltype{ORDER, T}(::Type{$(rot_type){ORDER}}, ::Type{T}) = add_eltype($(rot_type){ORDER}, eltype(T))
 
         # add the element type from another source when it is already present (ignore the other source)
@@ -253,7 +253,7 @@ function add_constructors(rot_type)
     append!(lhs_expr.args, [:($(xsym[i])::T) for i in 1:numel(rot_type)])
 
     #
-    # add extra construction methods for constructing from NTupples and FixedSizeArrays
+    # add extra construction methods for constructing from NTuples and FixedSizeArrays
     #
     qb = quote
 
@@ -314,6 +314,11 @@ function add_constructors(rot_type)
             end
         end
         append!(qb.args, qn.args)
+    elseif (rot_type == Quaternion)
+        qn = quote  # Quaternion may have forgotten this one
+            convert(::Type{$(rot_type)}, X::$(rot_type)) = X
+        end
+        append!(qb.args, qn.args)
     end
     
 
@@ -348,6 +353,8 @@ function add_constructors(rot_type)
         end
         append!(qb.args, qn.args)
     end
+
+
 
     # an extra methods if the type has two parameters
     if (n_params(rot_type) == 2)
@@ -489,6 +496,36 @@ function add_nan_check(rot_type)
     end
 end
 
+#
+# allow convert_rotations to do element type conversions
+#
+function add_conversions(rot_type)
+
+    # add a no conversion
+    qb = quote
+        convert_rotation(::Type{$(rot_type)}, X::$(rot_type)) = X
+    end
+
+    # and extras
+    if (n_params(rot_type) == 1)
+        qn = quote
+            convert_rotation{T <: Real}(::Type{$(rot_type){T}}, X::$(rot_type){T}) = X
+            convert_rotation{T <: Real, U <: Real}(::Type{$(rot_type){T}}, X::$(rot_type){U}) = convert($(rot_type){T}, X)
+        end
+        append!(qb.args, qn.args)
+    elseif (n_params(rot_type) == 2)
+        P1 = super(default_params(rot_type)[1])
+        qn = quote
+            convert_rotation{ORD <: $(P1), T <: Real}(::Type{$(rot_type){ORD,T}}, X::$(rot_type){ORD, T}) = X
+            convert_rotation{ORD <: $(P1), T <: Real, U <: Real}(::Type{$(rot_type){ORD, T}}, X::$(rot_type){ORD, U}) = convert($(rot_type){ORD, T}, X)
+        end
+        append!(qb.args, qn.args)
+    end
+    return qb
+end
+
+    
+
 
 
 #
@@ -506,7 +543,10 @@ function add_methods(rot_type)
     append!(qb.args, Rotations.add_param_functions(rot_type).args)
 
     # add extra constructors
-    append!(qb.args, Rotations.add_constructors(rot_type).args)    
+    append!(qb.args, Rotations.add_constructors(rot_type).args)
+
+    # add self conversions
+    append!(qb.args, Rotations.add_conversions(rot_type).args)        
 
     # add the vector conversion code
     append!(qb.args, Rotations.add_export_conversions(rot_type).args)  
