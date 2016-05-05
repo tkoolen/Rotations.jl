@@ -19,26 +19,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerZYX,T}) = euler_to_rot(e
 function euler_to_rot{T}(ea::EulerAngles{EulerZYX,T})
 
 
-	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
-	ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
-	ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
+    ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
+    ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
+    ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
 
-	@fsa([ ct2*ct3  ct3*st1*st2 - ct1*st3    st1*st3 + ct1*ct3*st2  ;
-	       ct2*st3  ct1*ct3 + st1*st2*st3    ct1*st2*st3 - ct3*st1  ;
-	       -st2     ct2*st1                  ct1*ct2                ])
+    @fsa([ ct2*ct3  ct3*st1*st2 - ct1*st3    st1*st3 + ct1*ct3*st2  ;
+           ct2*st3  ct1*ct3 + st1*st2*st3    ct1*st2*st3 - ct3*st1  ;
+           -st2     ct2*st1                  ct1*ct2                ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZYX,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
-	ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
-	ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
+    ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
+    ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
 
-	@fsa([ T(ct2*ct3)  T(ct3*st1*st2 - ct1*st3)    T(st1*st3 + ct1*ct3*st2)  ;
-	       T(ct2*st3)  T(ct1*ct3 + st1*st2*st3)    T(ct1*st2*st3 - ct3*st1)  ;
-	       T(-st2)     T(ct2*st1)                  T(ct1*ct2)                ])
+    @fsa([ T(ct2*ct3)  T(ct3*st1*st2 - ct1*st3)    T(st1*st3 + ct1*ct3*st2)  ;
+           T(ct2*st3)  T(ct1*ct3 + st1*st2*st3)    T(ct1*st2*st3 - ct3*st1)  ;
+           T(-st2)     T(ct2*st1)                  T(ct1*ct2)                ])
 
 end
 
@@ -47,14 +47,14 @@ rot_to_euler{T}(::Type{EulerAngles{EulerZYX}}, R::RotMatrix{T}) = rot_to_euler(E
 
 function rot_to_euler{T}(::Type{EulerAngles{EulerZYX,T}}, R::RotMatrix)
 
-	t1 = atan2(R[2, 1], R[1, 1])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(R[2, 1], R[1, 1])
+    ct1, st1 = cos(t1), sin(t1)
 
-	EulerAngles{EulerZYX,T}(
-		T(atan2(R[1, 3]*st1 - R[2, 3]*ct1, R[2, 2]*ct1 - R[1, 2]*st1)),
-		T(atan2(-R[3, 1], (R[3, 2] * R[3, 2] + R[3, 3] * R[3, 3])^(1/2))),
-		T(t1)
-		)
+    EulerAngles{EulerZYX,T}(
+        T(atan2(R[1, 3]*st1 - R[2, 3]*ct1, R[2, 2]*ct1 - R[1, 2]*st1)),
+        T(atan2(-R[3, 1], (R[3, 2] * R[3, 2] + R[3, 3] * R[3, 3])^(1/2))),
+        T(t1)
+        )
 end
 
 
@@ -67,26 +67,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerZXY,T}) = euler_to_rot(e
 function euler_to_rot{T}(ea::EulerAngles{EulerZXY,T})
 
 
-	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
-	ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
-	ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
+    ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
+    ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
+    ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
 
-	@fsa([ ct2*ct3 - st1*st2*st3  -ct1*st3    ct3*st2 + ct2*st1*st3  ;
-	       ct2*st3 + ct3*st1*st2  ct1*ct3     st2*st3 - ct2*ct3*st1  ;
-	       -ct1*st2               st1         ct1*ct2                ])
+    @fsa([ ct2*ct3 - st1*st2*st3  -ct1*st3    ct3*st2 + ct2*st1*st3  ;
+           ct2*st3 + ct3*st1*st2  ct1*ct3     st2*st3 - ct2*ct3*st1  ;
+           -ct1*st2               st1         ct1*ct2                ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerZXY,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
-	ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
-	ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
+    ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
+    ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
 
-	@fsa([ T(ct2*ct3 - st1*st2*st3)  T(-ct1*st3)    T(ct3*st2 + ct2*st1*st3)  ;
-	       T(ct2*st3 + ct3*st1*st2)  T(ct1*ct3)     T(st2*st3 - ct2*ct3*st1)  ;
-	       T(-ct1*st2)               T(st1)         T(ct1*ct2)                ])
+    @fsa([ T(ct2*ct3 - st1*st2*st3)  T(-ct1*st3)    T(ct3*st2 + ct2*st1*st3)  ;
+           T(ct2*st3 + ct3*st1*st2)  T(ct1*ct3)     T(st2*st3 - ct2*ct3*st1)  ;
+           T(-ct1*st2)               T(st1)         T(ct1*ct2)                ])
 
 end
 
@@ -95,14 +95,14 @@ rot_to_euler{T}(::Type{EulerAngles{EulerZXY}}, R::RotMatrix{T}) = rot_to_euler(E
 
 function rot_to_euler{T}(::Type{EulerAngles{EulerZXY,T}}, R::RotMatrix)
 
-	t1 = atan2(-R[1, 2], R[2, 2])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(-R[1, 2], R[2, 2])
+    ct1, st1 = cos(t1), sin(t1)
 
-	EulerAngles{EulerZXY,T}(
-		T(atan2(R[3, 2], (R[3, 1] * R[3, 1] + R[3, 3] * R[3, 3])^(1/2))),
-		T(atan2(R[1, 3]*ct1 + R[2, 3]*st1, R[1, 1]*ct1 + R[2, 1]*st1)),
-		T(t1)
-		)
+    EulerAngles{EulerZXY,T}(
+        T(atan2(R[3, 2], (R[3, 1] * R[3, 1] + R[3, 3] * R[3, 3])^(1/2))),
+        T(atan2(R[1, 3]*ct1 + R[2, 3]*st1, R[1, 1]*ct1 + R[2, 1]*st1)),
+        T(t1)
+        )
 end
 
 
@@ -115,26 +115,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerYZX,T}) = euler_to_rot(e
 function euler_to_rot{T}(ea::EulerAngles{EulerYZX,T})
 
 
-	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
-	ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
-	ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
+    ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
+    ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
+    ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
 
-	@fsa([ ct2*ct3   st1*st2 - ct1*ct2*st3    ct1*st2 + ct2*st1*st3  ;
-	       st3       ct1*ct3                  -ct3*st1               ;
-	       -ct3*st2  ct2*st1 + ct1*st2*st3    ct1*ct2 - st1*st2*st3  ])
+    @fsa([ ct2*ct3   st1*st2 - ct1*ct2*st3    ct1*st2 + ct2*st1*st3  ;
+           st3       ct1*ct3                  -ct3*st1               ;
+           -ct3*st2  ct2*st1 + ct1*st2*st3    ct1*ct2 - st1*st2*st3  ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYZX,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
-	ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
-	ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
+    ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
+    ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
 
-	@fsa([ T(ct2*ct3)   T(st1*st2 - ct1*ct2*st3)    T(ct1*st2 + ct2*st1*st3)  ;
-	       T(st3)       T(ct1*ct3)                  T(-ct3*st1)               ;
-	       T(-ct3*st2)  T(ct2*st1 + ct1*st2*st3)    T(ct1*ct2 - st1*st2*st3)  ])
+    @fsa([ T(ct2*ct3)   T(st1*st2 - ct1*ct2*st3)    T(ct1*st2 + ct2*st1*st3)  ;
+           T(st3)       T(ct1*ct3)                  T(-ct3*st1)               ;
+           T(-ct3*st2)  T(ct2*st1 + ct1*st2*st3)    T(ct1*ct2 - st1*st2*st3)  ])
 
 end
 
@@ -143,14 +143,14 @@ rot_to_euler{T}(::Type{EulerAngles{EulerYZX}}, R::RotMatrix{T}) = rot_to_euler(E
 
 function rot_to_euler{T}(::Type{EulerAngles{EulerYZX,T}}, R::RotMatrix)
 
-	t1 = atan2(-R[3, 1], R[1, 1])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(-R[3, 1], R[1, 1])
+    ct1, st1 = cos(t1), sin(t1)
 
-	EulerAngles{EulerYZX,T}(
-		T(atan2(R[3, 2]*ct1 + R[1, 2]*st1, R[3, 3]*ct1 + R[1, 3]*st1)),
-		T(t1),
-		T(atan2(R[2, 1], (R[2, 2] * R[2, 2] + R[2, 3] * R[2, 3])^(1/2)))
-		)
+    EulerAngles{EulerYZX,T}(
+        T(atan2(R[3, 2]*ct1 + R[1, 2]*st1, R[3, 3]*ct1 + R[1, 3]*st1)),
+        T(t1),
+        T(atan2(R[2, 1], (R[2, 2] * R[2, 2] + R[2, 3] * R[2, 3])^(1/2)))
+        )
 end
 
 
@@ -163,26 +163,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerYXZ,T}) = euler_to_rot(e
 function euler_to_rot{T}(ea::EulerAngles{EulerYXZ,T})
 
 
-	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
-	ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
-	ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
+    ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
+    ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
+    ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
 
-	@fsa([ ct2*ct3 + st1*st2*st3  ct3*st1*st2 - ct2*st3    ct1*st2  ;
-	       ct1*st3                ct1*ct3                  -st1     ;
-	       ct2*st1*st3 - ct3*st2  st2*st3 + ct2*ct3*st1    ct1*ct2  ])
+    @fsa([ ct2*ct3 + st1*st2*st3  ct3*st1*st2 - ct2*st3    ct1*st2  ;
+           ct1*st3                ct1*ct3                  -st1     ;
+           ct2*st1*st3 - ct3*st2  st2*st3 + ct2*ct3*st1    ct1*ct2  ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerYXZ,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
-	ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
-	ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
+    ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
+    ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
 
-	@fsa([ T(ct2*ct3 + st1*st2*st3)  T(ct3*st1*st2 - ct2*st3)    T(ct1*st2)  ;
-	       T(ct1*st3)                T(ct1*ct3)                  T(-st1)     ;
-	       T(ct2*st1*st3 - ct3*st2)  T(st2*st3 + ct2*ct3*st1)    T(ct1*ct2)  ])
+    @fsa([ T(ct2*ct3 + st1*st2*st3)  T(ct3*st1*st2 - ct2*st3)    T(ct1*st2)  ;
+           T(ct1*st3)                T(ct1*ct3)                  T(-st1)     ;
+           T(ct2*st1*st3 - ct3*st2)  T(st2*st3 + ct2*ct3*st1)    T(ct1*ct2)  ])
 
 end
 
@@ -191,14 +191,14 @@ rot_to_euler{T}(::Type{EulerAngles{EulerYXZ}}, R::RotMatrix{T}) = rot_to_euler(E
 
 function rot_to_euler{T}(::Type{EulerAngles{EulerYXZ,T}}, R::RotMatrix)
 
-	t1 = atan2(R[1, 3], R[3, 3])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(R[1, 3], R[3, 3])
+    ct1, st1 = cos(t1), sin(t1)
 
-	EulerAngles{EulerYXZ,T}(
-		T(atan2(-R[2, 3], (R[2, 1] * R[2, 1] + R[2, 2] * R[2, 2])^(1/2))),
-		T(t1),
-		T(atan2(R[3, 2]*st1 - R[1, 2]*ct1, R[1, 1]*ct1 - R[3, 1]*st1))
-		)
+    EulerAngles{EulerYXZ,T}(
+        T(atan2(-R[2, 3], (R[2, 1] * R[2, 1] + R[2, 2] * R[2, 2])^(1/2))),
+        T(t1),
+        T(atan2(R[3, 2]*st1 - R[1, 2]*ct1, R[1, 1]*ct1 - R[3, 1]*st1))
+        )
 end
 
 
@@ -211,26 +211,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerXYZ,T}) = euler_to_rot(e
 function euler_to_rot{T}(ea::EulerAngles{EulerXYZ,T})
 
 
-	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
-	ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
-	ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
+    ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
+    ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
+    ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
 
-	@fsa([ ct2*ct3                -ct2*st3                 st2       ;
-	       ct1*st3 + ct3*st1*st2  ct1*ct3 - st1*st2*st3    -ct2*st1  ;
-	       st1*st3 - ct1*ct3*st2  ct3*st1 + ct1*st2*st3    ct1*ct2   ])
+    @fsa([ ct2*ct3                -ct2*st3                 st2       ;
+           ct1*st3 + ct3*st1*st2  ct1*ct3 - st1*st2*st3    -ct2*st1  ;
+           st1*st3 - ct1*ct3*st2  ct3*st1 + ct1*st2*st3    ct1*ct2   ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXYZ,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
-	ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
-	ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
+    ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
+    ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
 
-	@fsa([ T(ct2*ct3)                T(-ct2*st3)                 T(st2)       ;
-	       T(ct1*st3 + ct3*st1*st2)  T(ct1*ct3 - st1*st2*st3)    T(-ct2*st1)  ;
-	       T(st1*st3 - ct1*ct3*st2)  T(ct3*st1 + ct1*st2*st3)    T(ct1*ct2)   ])
+    @fsa([ T(ct2*ct3)                T(-ct2*st3)                 T(st2)       ;
+           T(ct1*st3 + ct3*st1*st2)  T(ct1*ct3 - st1*st2*st3)    T(-ct2*st1)  ;
+           T(st1*st3 - ct1*ct3*st2)  T(ct3*st1 + ct1*st2*st3)    T(ct1*ct2)   ])
 
 end
 
@@ -239,14 +239,14 @@ rot_to_euler{T}(::Type{EulerAngles{EulerXYZ}}, R::RotMatrix{T}) = rot_to_euler(E
 
 function rot_to_euler{T}(::Type{EulerAngles{EulerXYZ,T}}, R::RotMatrix)
 
-	t1 = atan2(-R[2, 3], R[3, 3])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(-R[2, 3], R[3, 3])
+    ct1, st1 = cos(t1), sin(t1)
 
-	EulerAngles{EulerXYZ,T}(
-		T(t1),
-		T(atan2(R[1, 3], (R[1, 1] * R[1, 1] + R[1, 2] * R[1, 2])^(1/2))),
-		T(atan2(R[2, 1]*ct1 + R[3, 1]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
-		)
+    EulerAngles{EulerXYZ,T}(
+        T(t1),
+        T(atan2(R[1, 3], (R[1, 1] * R[1, 1] + R[1, 2] * R[1, 2])^(1/2))),
+        T(atan2(R[2, 1]*ct1 + R[3, 1]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
+        )
 end
 
 
@@ -259,26 +259,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::EulerAngles{EulerXZY,T}) = euler_to_rot(e
 function euler_to_rot{T}(ea::EulerAngles{EulerXZY,T})
 
 
-	ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
-	ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
-	ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
+    ct1, st1 = cos(ea.theta_x), sin(ea.theta_x)
+    ct2, st2 = cos(ea.theta_y), sin(ea.theta_y)
+    ct3, st3 = cos(ea.theta_z), sin(ea.theta_z)
 
-	@fsa([ ct2*ct3                -st3       ct3*st2                ;
-	       st1*st2 + ct1*ct2*st3  ct1*ct3    ct1*st2*st3 - ct2*st1  ;
-	       ct2*st1*st3 - ct1*st2  ct3*st1    ct1*ct2 + st1*st2*st3  ])
+    @fsa([ ct2*ct3                -st3       ct3*st2                ;
+           st1*st2 + ct1*ct2*st3  ct1*ct3    ct1*st2*st3 - ct2*st1  ;
+           ct2*st1*st3 - ct1*st2  ct3*st1    ct1*ct2 + st1*st2*st3  ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::EulerAngles{EulerXZY,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
-	ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
-	ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_x)), sin(wT(ea.theta_x))
+    ct2, st2 = cos(wT(ea.theta_y)), sin(wT(ea.theta_y))
+    ct3, st3 = cos(wT(ea.theta_z)), sin(wT(ea.theta_z))
 
-	@fsa([ T(ct2*ct3)                T(-st3)       T(ct3*st2)                ;
-	       T(st1*st2 + ct1*ct2*st3)  T(ct1*ct3)    T(ct1*st2*st3 - ct2*st1)  ;
-	       T(ct2*st1*st3 - ct1*st2)  T(ct3*st1)    T(ct1*ct2 + st1*st2*st3)  ])
+    @fsa([ T(ct2*ct3)                T(-st3)       T(ct3*st2)                ;
+           T(st1*st2 + ct1*ct2*st3)  T(ct1*ct3)    T(ct1*st2*st3 - ct2*st1)  ;
+           T(ct2*st1*st3 - ct1*st2)  T(ct3*st1)    T(ct1*ct2 + st1*st2*st3)  ])
 
 end
 
@@ -287,14 +287,14 @@ rot_to_euler{T}(::Type{EulerAngles{EulerXZY}}, R::RotMatrix{T}) = rot_to_euler(E
 
 function rot_to_euler{T}(::Type{EulerAngles{EulerXZY,T}}, R::RotMatrix)
 
-	t1 = atan2(R[3, 2], R[2, 2])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(R[3, 2], R[2, 2])
+    ct1, st1 = cos(t1), sin(t1)
 
-	EulerAngles{EulerXZY,T}(
-		T(t1),
-		T(atan2(R[2, 1]*st1 - R[3, 1]*ct1, R[3, 3]*ct1 - R[2, 3]*st1)),
-		T(atan2(-R[1, 2], (R[1, 1] * R[1, 1] + R[1, 3] * R[1, 3])^(1/2)))
-		)
+    EulerAngles{EulerXZY,T}(
+        T(t1),
+        T(atan2(R[2, 1]*st1 - R[3, 1]*ct1, R[3, 3]*ct1 - R[2, 3]*st1)),
+        T(atan2(-R[1, 2], (R[1, 1] * R[1, 1] + R[1, 3] * R[1, 3])^(1/2)))
+        )
 end
 
 
@@ -312,26 +312,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerZYZ,T}) = euler_to
 function euler_to_rot{T}(ea::ProperEulerAngles{EulerZYZ,T})
 
 
-	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
-	ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
-	ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
+    ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
+    ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
+    ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
 
-	@fsa([ ct1*ct2*ct3 - st1*st3  -ct3*st1 - ct1*ct2*st3    ct1*st2  ;
-	       ct1*st3 + ct2*ct3*st1  ct1*ct3 - ct2*st1*st3     st1*st2  ;
-	       -ct3*st2               st2*st3                   ct2      ])
+    @fsa([ ct1*ct2*ct3 - st1*st3  -ct3*st1 - ct1*ct2*st3    ct1*st2  ;
+           ct1*st3 + ct2*ct3*st1  ct1*ct3 - ct2*st1*st3     st1*st2  ;
+           -ct3*st2               st2*st3                   ct2      ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZYZ,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
-	ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
-	ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
+    ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
+    ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
 
-	@fsa([ T(ct1*ct2*ct3 - st1*st3)  T(-ct3*st1 - ct1*ct2*st3)    T(ct1*st2)  ;
-	       T(ct1*st3 + ct2*ct3*st1)  T(ct1*ct3 - ct2*st1*st3)     T(st1*st2)  ;
-	       T(-ct3*st2)               T(st2*st3)                   T(ct2)      ])
+    @fsa([ T(ct1*ct2*ct3 - st1*st3)  T(-ct3*st1 - ct1*ct2*st3)    T(ct1*st2)  ;
+           T(ct1*st3 + ct2*ct3*st1)  T(ct1*ct3 - ct2*st1*st3)     T(st1*st2)  ;
+           T(-ct3*st2)               T(st2*st3)                   T(ct2)      ])
 
 end
 
@@ -340,14 +340,14 @@ rot_to_euler{T}(::Type{ProperEulerAngles{EulerZYZ}}, R::RotMatrix{T}) = rot_to_e
 
 function rot_to_euler{T}(::Type{ProperEulerAngles{EulerZYZ,T}}, R::RotMatrix)
 
-	t1 = atan2(R[2, 3], R[1, 3])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(R[2, 3], R[1, 3])
+    ct1, st1 = cos(t1), sin(t1)
 
-	ProperEulerAngles{EulerZYZ,T}(
-		T(t1),
-		T(atan2((R[3, 1] * R[3, 1] + R[3, 2] * R[3, 2])^(1/2), R[3, 3])),
-		T(atan2(R[2, 1]*ct1 - R[1, 1]*st1, R[2, 2]*ct1 - R[1, 2]*st1))
-		)
+    ProperEulerAngles{EulerZYZ,T}(
+        T(t1),
+        T(atan2((R[3, 1] * R[3, 1] + R[3, 2] * R[3, 2])^(1/2), R[3, 3])),
+        T(atan2(R[2, 1]*ct1 - R[1, 1]*st1, R[2, 2]*ct1 - R[1, 2]*st1))
+        )
 end
 
 
@@ -360,26 +360,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerZXZ,T}) = euler_to
 function euler_to_rot{T}(ea::ProperEulerAngles{EulerZXZ,T})
 
 
-	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
-	ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
-	ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
+    ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
+    ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
+    ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
 
-	@fsa([ ct1*ct3 - ct2*st1*st3  -ct1*st3 - ct2*ct3*st1    st1*st2   ;
-	       ct3*st1 + ct1*ct2*st3  ct1*ct2*ct3 - st1*st3     -ct1*st2  ;
-	       st2*st3                ct3*st2                   ct2       ])
+    @fsa([ ct1*ct3 - ct2*st1*st3  -ct1*st3 - ct2*ct3*st1    st1*st2   ;
+           ct3*st1 + ct1*ct2*st3  ct1*ct2*ct3 - st1*st3     -ct1*st2  ;
+           st2*st3                ct3*st2                   ct2       ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerZXZ,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
-	ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
-	ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
+    ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
+    ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
 
-	@fsa([ T(ct1*ct3 - ct2*st1*st3)  T(-ct1*st3 - ct2*ct3*st1)    T(st1*st2)   ;
-	       T(ct3*st1 + ct1*ct2*st3)  T(ct1*ct2*ct3 - st1*st3)     T(-ct1*st2)  ;
-	       T(st2*st3)                T(ct3*st2)                   T(ct2)       ])
+    @fsa([ T(ct1*ct3 - ct2*st1*st3)  T(-ct1*st3 - ct2*ct3*st1)    T(st1*st2)   ;
+           T(ct3*st1 + ct1*ct2*st3)  T(ct1*ct2*ct3 - st1*st3)     T(-ct1*st2)  ;
+           T(st2*st3)                T(ct3*st2)                   T(ct2)       ])
 
 end
 
@@ -389,13 +389,13 @@ rot_to_euler{T}(::Type{ProperEulerAngles{EulerZXZ}}, R::RotMatrix{T}) = rot_to_e
 function rot_to_euler{T}(::Type{ProperEulerAngles{EulerZXZ,T}}, R::RotMatrix)
 
     t1 = atan2(R[1, 3], (-R[2, 3] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
-	ct1, st1 = cos(t1), sin(t1)
+    ct1, st1 = cos(t1), sin(t1)
 
-	ProperEulerAngles{EulerZXZ,T}(
-		T(t1),
-		T(atan2((R[3, 1] * R[3, 1] + R[3, 2] * R[3, 2])^(1/2), R[3, 3])),
-		T(atan2(- R[1, 2]*ct1 - R[2, 2]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
-		)
+    ProperEulerAngles{EulerZXZ,T}(
+        T(t1),
+        T(atan2((R[3, 1] * R[3, 1] + R[3, 2] * R[3, 2])^(1/2), R[3, 3])),
+        T(atan2(- R[1, 2]*ct1 - R[2, 2]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
+        )
 end
 
 
@@ -408,26 +408,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerYZY,T}) = euler_to
 function euler_to_rot{T}(ea::ProperEulerAngles{EulerYZY,T})
 
 
-	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
-	ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
-	ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
+    ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
+    ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
+    ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
 
-	@fsa([ ct1*ct2*ct3 - st1*st3   -ct1*st2    ct3*st1 + ct1*ct2*st3  ;
-	       ct3*st2                 ct2         st2*st3                ;
-	       -ct1*st3 - ct2*ct3*st1  st1*st2     ct1*ct3 - ct2*st1*st3  ])
+    @fsa([ ct1*ct2*ct3 - st1*st3   -ct1*st2    ct3*st1 + ct1*ct2*st3  ;
+           ct3*st2                 ct2         st2*st3                ;
+           -ct1*st3 - ct2*ct3*st1  st1*st2     ct1*ct3 - ct2*st1*st3  ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYZY,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
-	ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
-	ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
+    ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
+    ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
 
-	@fsa([ T(ct1*ct2*ct3 - st1*st3)   T(-ct1*st2)    T(ct3*st1 + ct1*ct2*st3)  ;
-	       T(ct3*st2)                 T(ct2)         T(st2*st3)                ;
-	       T(-ct1*st3 - ct2*ct3*st1)  T(st1*st2)     T(ct1*ct3 - ct2*st1*st3)  ])
+    @fsa([ T(ct1*ct2*ct3 - st1*st3)   T(-ct1*st2)    T(ct3*st1 + ct1*ct2*st3)  ;
+           T(ct3*st2)                 T(ct2)         T(st2*st3)                ;
+           T(-ct1*st3 - ct2*ct3*st1)  T(st1*st2)     T(ct1*ct3 - ct2*st1*st3)  ])
 
 end
 
@@ -437,13 +437,13 @@ rot_to_euler{T}(::Type{ProperEulerAngles{EulerYZY}}, R::RotMatrix{T}) = rot_to_e
 function rot_to_euler{T}(::Type{ProperEulerAngles{EulerYZY,T}}, R::RotMatrix)
 
     t1 = atan2(R[3, 2], (-R[1, 2] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
-	ct1, st1 = cos(t1), sin(t1)
+    ct1, st1 = cos(t1), sin(t1)
 
-	ProperEulerAngles{EulerYZY,T}(
-		T(t1),
-		T(atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2])),
-		T(atan2(- R[3, 1]*ct1 - R[1, 1]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
-		)
+    ProperEulerAngles{EulerYZY,T}(
+        T(t1),
+        T(atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2])),
+        T(atan2(- R[3, 1]*ct1 - R[1, 1]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
+        )
 end
 
 
@@ -456,26 +456,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerYXY,T}) = euler_to
 function euler_to_rot{T}(ea::ProperEulerAngles{EulerYXY,T})
 
 
-	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
-	ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
-	ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
+    ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
+    ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
+    ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
 
-	@fsa([ ct1*ct3 - ct2*st1*st3   st1*st2    ct1*st3 + ct2*ct3*st1  ;
-	       st2*st3                 ct2        -ct3*st2               ;
-	       -ct3*st1 - ct1*ct2*st3  ct1*st2    ct1*ct2*ct3 - st1*st3  ])
+    @fsa([ ct1*ct3 - ct2*st1*st3   st1*st2    ct1*st3 + ct2*ct3*st1  ;
+           st2*st3                 ct2        -ct3*st2               ;
+           -ct3*st1 - ct1*ct2*st3  ct1*st2    ct1*ct2*ct3 - st1*st3  ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerYXY,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
-	ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
-	ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
+    ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
+    ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
 
-	@fsa([ T(ct1*ct3 - ct2*st1*st3)   T(st1*st2)    T(ct1*st3 + ct2*ct3*st1)  ;
-	       T(st2*st3)                 T(ct2)        T(-ct3*st2)               ;
-	       T(-ct3*st1 - ct1*ct2*st3)  T(ct1*st2)    T(ct1*ct2*ct3 - st1*st3)  ])
+    @fsa([ T(ct1*ct3 - ct2*st1*st3)   T(st1*st2)    T(ct1*st3 + ct2*ct3*st1)  ;
+           T(st2*st3)                 T(ct2)        T(-ct3*st2)               ;
+           T(-ct3*st1 - ct1*ct2*st3)  T(ct1*st2)    T(ct1*ct2*ct3 - st1*st3)  ])
 
 end
 
@@ -484,14 +484,14 @@ rot_to_euler{T}(::Type{ProperEulerAngles{EulerYXY}}, R::RotMatrix{T}) = rot_to_e
 
 function rot_to_euler{T}(::Type{ProperEulerAngles{EulerYXY,T}}, R::RotMatrix)
 
-	t1 = atan2(R[1, 2], R[3, 2])
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(R[1, 2], R[3, 2])
+    ct1, st1 = cos(t1), sin(t1)
 
-	ProperEulerAngles{EulerYXY,T}(
-		T(t1),
-		T(atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2])),
-		T(atan2(R[1, 3]*ct1 - R[3, 3]*st1, R[1, 1]*ct1 - R[3, 1]*st1))
-		)
+    ProperEulerAngles{EulerYXY,T}(
+        T(t1),
+        T(atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2])),
+        T(atan2(R[1, 3]*ct1 - R[3, 3]*st1, R[1, 1]*ct1 - R[3, 1]*st1))
+        )
 end
 
 
@@ -504,26 +504,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerXYX,T}) = euler_to
 function euler_to_rot{T}(ea::ProperEulerAngles{EulerXYX,T})
 
 
-	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
-	ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
-	ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
+    ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
+    ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
+    ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
 
-	@fsa([ ct2       st2*st3                  ct3*st2                 ;
-	       st1*st2   ct1*ct3 - ct2*st1*st3    -ct1*st3 - ct2*ct3*st1  ;
-	       -ct1*st2  ct3*st1 + ct1*ct2*st3    ct1*ct2*ct3 - st1*st3   ])
+    @fsa([ ct2       st2*st3                  ct3*st2                 ;
+           st1*st2   ct1*ct3 - ct2*st1*st3    -ct1*st3 - ct2*ct3*st1  ;
+           -ct1*st2  ct3*st1 + ct1*ct2*st3    ct1*ct2*ct3 - st1*st3   ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXYX,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
-	ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
-	ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
+    ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
+    ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
 
-	@fsa([ T(ct2)       T(st2*st3)                  T(ct3*st2)                 ;
-	       T(st1*st2)   T(ct1*ct3 - ct2*st1*st3)    T(-ct1*st3 - ct2*ct3*st1)  ;
-	       T(-ct1*st2)  T(ct3*st1 + ct1*ct2*st3)    T(ct1*ct2*ct3 - st1*st3)   ])
+    @fsa([ T(ct2)       T(st2*st3)                  T(ct3*st2)                 ;
+           T(st1*st2)   T(ct1*ct3 - ct2*st1*st3)    T(-ct1*st3 - ct2*ct3*st1)  ;
+           T(-ct1*st2)  T(ct3*st1 + ct1*ct2*st3)    T(ct1*ct2*ct3 - st1*st3)   ])
 
 end
 
@@ -532,14 +532,14 @@ rot_to_euler{T}(::Type{ProperEulerAngles{EulerXYX}}, R::RotMatrix{T}) = rot_to_e
 
 function rot_to_euler{T}(::Type{ProperEulerAngles{EulerXYX,T}}, R::RotMatrix)
 
-	t1 = atan2(R[2, 1], (-R[3, 1] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
-	ct1, st1 = cos(t1), sin(t1)
+    t1 = atan2(R[2, 1], (-R[3, 1] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
+    ct1, st1 = cos(t1), sin(t1)
 
-	ProperEulerAngles{EulerXYX,T}(
-		T(t1),
-		T(atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1])),
-		T(atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
-		)
+    ProperEulerAngles{EulerXYX,T}(
+        T(t1),
+        T(atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1])),
+        T(atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
+        )
 end
 
 
@@ -552,26 +552,26 @@ euler_to_rot{T}(::Type{RotMatrix}, ea::ProperEulerAngles{EulerXZX,T}) = euler_to
 function euler_to_rot{T}(ea::ProperEulerAngles{EulerXZX,T})
 
 
-	ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
-	ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
-	ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
+    ct1, st1 = cos(ea.theta_1), sin(ea.theta_1)
+    ct2, st2 = cos(ea.theta_2), sin(ea.theta_2)
+    ct3, st3 = cos(ea.theta_3), sin(ea.theta_3)
 
-	@fsa([ ct2      -ct3*st2                 st2*st3                 ;
-	       ct1*st2  ct1*ct2*ct3 - st1*st3    -ct3*st1 - ct1*ct2*st3  ;
-	       st1*st2  ct1*st3 + ct2*ct3*st1    ct1*ct3 - ct2*st1*st3   ])
+    @fsa([ ct2      -ct3*st2                 st2*st3                 ;
+           ct1*st2  ct1*ct2*ct3 - st1*st3    -ct3*st1 - ct1*ct2*st3  ;
+           st1*st2  ct1*st3 + ct2*ct3*st1    ct1*ct3 - ct2*st1*st3   ])
 
 end
 
 function euler_to_rot{T,U}(::Type{RotMatrix{T}}, ea::ProperEulerAngles{EulerXZX,U})
 
-	wT = promote_type(T, U)
-	ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
-	ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
-	ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
+    wT = promote_type(T, U)
+    ct1, st1 = cos(wT(ea.theta_1)), sin(wT(ea.theta_1))
+    ct2, st2 = cos(wT(ea.theta_2)), sin(wT(ea.theta_2))
+    ct3, st3 = cos(wT(ea.theta_3)), sin(wT(ea.theta_3))
 
-	@fsa([ T(ct2)      T(-ct3*st2)                 T(st2*st3)                 ;
-	       T(ct1*st2)  T(ct1*ct2*ct3 - st1*st3)    T(-ct3*st1 - ct1*ct2*st3)  ;
-	       T(st1*st2)  T(ct1*st3 + ct2*ct3*st1)    T(ct1*ct3 - ct2*st1*st3)   ])
+    @fsa([ T(ct2)      T(-ct3*st2)                 T(st2*st3)                 ;
+           T(ct1*st2)  T(ct1*ct2*ct3 - st1*st3)    T(-ct3*st1 - ct1*ct2*st3)  ;
+           T(st1*st2)  T(ct1*st3 + ct2*ct3*st1)    T(ct1*ct3 - ct2*st1*st3)   ])
 
 end
 
@@ -581,13 +581,13 @@ rot_to_euler{T}(::Type{ProperEulerAngles{EulerXZX}}, R::RotMatrix{T}) = rot_to_e
 function rot_to_euler{T}(::Type{ProperEulerAngles{EulerXZX,T}}, R::RotMatrix)
 
     t1 = atan2(R[3, 1], R[2, 1])  
-	ct1, st1 = cos(t1), sin(t1)
+    ct1, st1 = cos(t1), sin(t1)
 
-	ProperEulerAngles{EulerXZX,T}(
-		T(t1),
-		T(atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1])),
-		T(atan2(R[3, 2]*ct1 - R[2, 2]*st1, R[3, 3]*ct1 - R[2, 3]*st1))
-		)
+    ProperEulerAngles{EulerXZX,T}(
+        T(t1),
+        T(atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1])),
+        T(atan2(R[3, 2]*ct1 - R[2, 2]*st1, R[3, 3]*ct1 - R[2, 3]*st1))
+        )
 end
 
 

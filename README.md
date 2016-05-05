@@ -1,32 +1,71 @@
 # Rotations.jl
 
-This package implements various rotation parameterizations and defines conversions between them.  All rotation variables are stored as as immutable types.
+### Example Usage
 
-This package assumes [active (right handed) rotations](https://en.wikipedia.org/wiki/Active_and_passive_transformation) wheere applicable.
+```julia
+
+    using FixedSizeArrays
+    using Rotations
+
+    # create a rotation matrix
+    R = eye(RotMatrix{Float64})
+
+    # create a point
+    X = Vec(1.0, 2.0, 3.0)
+
+    # convert to Euler Angles (using the default ordering scheme)
+    ea = EulerAngles(R)
+    Xo = rotate(ea, X)
+
+    # convert to Euler Angles specifying the angle order
+    ea = EulerAngles{Rotations.EulerXYZ}(R)
+    Xo = rotate(ea, X)
+
+    # convert to proper Euler Angles (using the default ordering scheme)
+    ea = ProperEulerAngles(R)
+    Xo = rotate(ea, X)
+
+    # convert to proper Euler Angles specifying the angle order
+    ea = ProperEulerAngles{Rotations.EulerXYX}(R)
+    Xo = rotate(ea, X)
+
+    # a Quaternion
+    q = Quaternion(R)
+    Xo = rotate(ea, X)
+
+    # Stereo graphic projection of a quaternion (recommended for optimization problems)
+    spq = SpQuat(R)
+    Xo = rotate(spq, X)
+
+```
+
+This package implements various 3D rotation parameterizations and defines conversions between them.  All rotation variables are stored as as immutable types.
+
+This package assumes [active (right handed) rotations](https://en.wikipedia.org/wiki/Active_and_passive_transformation) where applicable.
 
 ### Rotation Parameterizations
 
 1. **Rotation Matrix** `RotMatrix{T <: AbstractFloat}`
 
-    A 3 x 3 rotation matrix storing the rotation.  This is a typealias of a [FixedSizeArrays](https://github.com/SimonDanisch/FixedSizeArrays.jl) `Mat{3,3,T}`.  A rotation matrix `R` should have the property `I = R * R<sup>T</sup>`.
+    A 3 x 3 rotation matrix storing the rotation.  This is a typealias of a [FixedSizeArrays](https://github.com/SimonDanisch/FixedSizeArrays.jl) `Mat{3,3,T}`.  A rotation matrix `R` should have the property `I = R * R'`.
 
 
 
 2. **Arbitrary Axis Rotation** `AngleAxis{T <: AbstractFloat}`
 
-    A 4 element immutable array with fields `theta`, `x`, `y`, and `z` to store the rotation angle and axis of the rotation.  This is a typealias of a [FixedSizeArrays](https://github.com/SimonDanisch/FixedSizeArrays.jl) `FixedVectorNoTuple{4, T}`.
+    A 4 element immutable array with fields `theta`, `x`, `y`, and `z` to store the rotation angle and axis of the rotation.
 
 
 
 3. **EulerAngles** `EulerAngles{Order <: TaitByranOrder, T <: AbstractFloat}`
 
-    A 3 element immutable array which stores the Euler angles with [**Tait Byran**](https://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles) angle ordering (e.g. `EulerXYZ`) encoded by the template parameter `Order`.   This is a typealias of a [FixedSizeArrays](https://github.com/SimonDanisch/FixedSizeArrays.jl) `FixedVectorNoTuple{3, T}`.
+    A 3 element immutable array which stores the Euler angles with [**Tait Byran**](https://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles) angle ordering (e.g. `EulerXYZ`) encoded by the template parameter `Order`.
 
 
 
 4. **ProperEulerAngles** `ProperEulerAngles{Order <: ProperEulerOrder, T <: AbstractFloat}`
 
-    A 3 element immutable array which stores the Euler angles with [**Proper Euler**](https://en.wikipedia.org/wiki/Euler_angles#Conventions) angle ordering (e.g. `EulerXYX`) encoded by the template paramter `Order`.   This is a typealias of a [FixedSizeArrays](https://github.com/SimonDanisch/FixedSizeArrays.jl) `FixedVectorNoTuple{3, T}`.
+    A 3 element immutable array which stores the Euler angles with [**Proper Euler**](https://en.wikipedia.org/wiki/Euler_angles#Conventions) angle ordering (e.g. `EulerXYX`) encoded by the template paramter `Order`.
 
 
 
@@ -45,42 +84,7 @@ This package assumes [active (right handed) rotations](https://en.wikipedia.org/
 
 
 
-### Example Usage
 
-```julia
-
-    # create a rotation matrix
-    R = RotMatrix(eye(3))
-
-    # create a point
-    using FixedSizeArrays
-    X = Vec{3, Float64}(1,2,3)
-
-    # convert to Euler Angles (using the default ordering scheme)
-    ea = EulerAngles(R)
-    Xo = ea * X
-
-    # convert to Euler Angles specifying the angle order
-    ea = EulerAngles{Rotations.EulerXYZ}(R)
-    Xo = ea * X
-
-    # convert to proper Euler Angles (using the default ordering scheme)
-    pea = ProperEulerAngles(R)
-    Xo = pea * X
-
-    # convert to proper Euler Angles specifying the angle order
-    ea = ProperEulerAngles{Rotations.EulerXYX}(R)
-    Xo = ea * X
-
-    # a Quaternion
-    q = Quaternion(R)
-    Xo = q * X
-
-    # Stereo graphic projection of a quaternion (recommended for optimization problems)
-    spq = SpQuat(R)
-    Xo = spq * X
-
-```
 
 The `convert` function is used to convert element types for the same parameterization, e.g.
 
@@ -105,7 +109,7 @@ All parameterizations can be converted to and from mutable / immutable vectors, 
     q = Quaternion(1.0,0,0,0)
     v_mutable = Vector(q)
     v_immutable = Vec(q)
-    
+
     # import
     q2 = Quaternion(v_mutable)
     q2 = Quaternion(v_immutable)
@@ -125,10 +129,10 @@ They're faster (BLAS isn't great for 3x3 matrices) and don't need preallocating:
             Xb, Xo = zeros(3), zeros(3)
             for i = 1:n
                 A_mul_B!(Xb, R, X)
-                # @inbounds Xo[1] += Xb[1]; @inbounds Xo[2] += Xb[2]; @inbounds Xo[3] += Xb[3];  
+                # @inbounds Xo[1] += Xb[1]; @inbounds Xo[2] += Xb[2]; @inbounds Xo[3] += Xb[3];
             end
             return Xo
-        end   
+        end
 
         function rotate_immutable(R, X, n)
             Xo = Vec(0.0,0,0)
@@ -140,8 +144,8 @@ They're faster (BLAS isn't great for 3x3 matrices) and don't need preallocating:
         end
 
         # Initialise
-        R_mute, R_immute = eye(3), RotMatrix(eye(3))
-        X_mute, X_immute = zeros(3), Vec(0.0,0,0)
+        R_mute, R_immute = eye(3), eye(RotMatrix)
+        X_mute, X_immute = zeros(3), Vec(0.0, 0.0, 0.0)
 
         # and test
         rotate_mutable(R_mute, X_mute, 1)
@@ -154,7 +158,11 @@ They're faster (BLAS isn't great for 3x3 matrices) and don't need preallocating:
 
     end
 
+    benchmark()
+    # Rotating using mutables
+    #   0.077123 seconds (3 allocations: 208 bytes)
+    #   Rotating using immutables
+    #   0.003569 seconds (4 allocations: 160 bytes)
+
 ```
-
-
 

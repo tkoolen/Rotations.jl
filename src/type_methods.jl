@@ -14,6 +14,16 @@ typed_acc(i) = isa(i, Int) ? :(T(X[$(i)])) : :(T(X.$(i)))
 
 
 #
+# Define special import rules for Quaternions because we want to enable 3 Vectors to be promoted to Quaternions
+#
+@inline convert{T <: Quaternion, U <: Real}(::Type{T}, X::Vector{U}) =
+        (length(X) == 3) ? Quaternion(zero(U), X[1], X[2], X[3], false) : Quaternion(X[1], X[2], X[3], X[4], false)  # allow 3 Vec -> Quat
+@inline call{T <: Quaternion, U <: Real}(::Type{T}, X::Vector{U}) = convert(T, X)
+@inline convert{T <: Quaternion, U <: Real}(::Type{T}, X::FixedVector{3, U}) = T(0.0, X[1], X[2], X[3], false)
+
+
+
+#
 # function to create a code block to convert to and from Vec and Vector rtypes
 #
 function add_methods(rot_type)
@@ -47,8 +57,28 @@ function add_methods(rot_type)
         @inline call{T <: Vector}(::Type{T}, X::$(rot_type)) = convert(T, X)
 
         # convert from a mutable vector
-        @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::Vector{U}) = T($(untyped_indexed_expr.args...))
-        @inline call{T <: $(rot_type), U <: Real}(::Type{T}, X::Vector{U}) = convert(T, X)
+        if ($(rot_type) != Quaternion)  # Quaternions has this defined already
+            @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::Vector{U}) = T($(untyped_indexed_expr.args...))
+            @inline call{T <: $(rot_type), U <: Real}(::Type{T}, X::Vector{U}) = convert(T, X)
+        end
+
+        # convert to an immutable vector
+        @inline convert(::Type{Vec}, X::$(rot_type)) = Vec($(untyped_field_expr.args...))
+        @inline convert{T <: Real}(::Type{Vec{$(numel(rot_type)), T}}, X::$(rot_type)) = Vec($(typed_field_expr.args...))
+        @inline call(::Type{Vec}, X::$(rot_type)) = convert(Vec, X)
+        @inline call{T <: Real}(::Type{Vec{$(numel(rot_type)), T}}, X::$(rot_type)) = convert(Vec{$(numel(rot_type)), T}, X)
+
+        # convert from an immutable vector
+        @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::FixedVector{$(numel(rot_type)), U}) = T($(untyped_indexed_expr.args...))
+        @inline call{T <: $(rot_type), U <: Real}(::Type{T}, X::FixedVector{$(numel(rot_type)), U}) = convert(T, X)
+
+        # convert to a tuple
+        # @inline tuple(X::$(rot_type)) = tuple($(untyped_field_expr.args...))
+
+        # convert from a tuple
+        @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = T($(untyped_indexed_expr.args...))
+        @inline call{T <: $(rot_type), U <: Real}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = convert(T, X)
+
 
     end
     append!(qb.args, qn.args)

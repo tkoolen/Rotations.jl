@@ -6,13 +6,13 @@
 #############################################################
 
 
-@doc """
+"""
     Equivilent arbitrary axis rotation angle for a quaternion
-""" ->
+"""
 rot_angle(q::Quaternion) = 2 * acos(Quaternions.normalize(q).s)
 
 
-@doc """
+"""
 function to find the mean of a set of quaternians
 
 Args:
@@ -24,7 +24,7 @@ Args:
 
                    - if 1, the returned quaternian minimizes sum_i=1:n (phi_i ^2) where phi_i is the angle of Qe_i, with  Qbar = Q_i x Qe_i
                            this should be about the same as method == 0 if phi_i are all small
-""" ->
+"""
 function mean(Qarray::Vector{Quaternion}, method::Integer = 0)
 
     if (method == 0)
@@ -43,7 +43,7 @@ function mean(Qarray::Vector{Quaternion}, method::Integer = 0)
 
 end
 
-@doc """
+"""
 function to return the derivitive of the rotation matrix w.r.t the quaternion elements
 
 Args:
@@ -54,30 +54,30 @@ Returns:
 
     dRdQ         - an array of four 3 x 3 matrices specifying each partial derivitive, i.e. dRdQ[i] = dR/d(Q[i])
 
-""" ->
+"""
 function quattorotderiv{T}(q::Quaternion{T})
 
     # preallocate
     dRdQ = Vector{Mat{3,3,T}}(4)
 
     # w.r.t q[1]
-    dRdQ[1] = 2*@fsa( [q.s    -q.v3    q.v2;
-                       q.v3     q.s   -q.v1;
+    dRdQ[1] = 2*@fsa( [q.s     -q.v3    q.v2;
+                       q.v3     q.s    -q.v1;
                       -q.v2     q.v1    q.s])
 
     # w.r.t q[2]
     dRdQ[2] = 2*@fsa([q.v1     q.v2    q.v3;
                       q.v2    -q.v1   -q.s;
-                      q.v3     q.s   -q.v1])
+                      q.v3     q.s    -q.v1])
 
     # w.r.t q[3]
     dRdQ[3] = 2*@fsa([-q.v2     q.v1    q.s;
                        q.v1     q.v2    q.v3;
-                      -q.s     q.v3   -q.v2])
+                      -q.s      q.v3   -q.v2])
 
     # w.r.t q[4]
     dRdQ[4] = 2*@fsa( [-q.v3    -q.s    q.v1;
-                       q.s    -q.v3   -q.v2;
+                       q.s     -q.v3   -q.v2;
                        q.v1     q.v2    q.v3])
 
 
@@ -88,7 +88,7 @@ end
 
 
 
-@doc """
+"""
 
 function to return the 2nd derivitives of the rotation matrix w.r.t the quaternion elements
 
@@ -106,7 +106,7 @@ Notes:
 
     Returned matrix is stored compactly (i.e. modifying d2RdQ[i,j] will change d2RdQ[j,i])
 
-""" ->
+"""
 function quattorotderiv2{T}(q::Quaternion{T}=Quaternion(1.0))
 
     # preallocate

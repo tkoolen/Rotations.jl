@@ -1,7 +1,7 @@
 # define maths function for rotations types
 import Base: (*), .*, (-), (.-), (+), (.+), (/), (./)
 
-
+const enable_mult = false   # enable RotType * Vec to rotate a point.  This may not be real maths
 
 function add_maths(rot_type)
 
@@ -27,11 +27,13 @@ function add_maths(rot_type)
 
     #
     # allow rotating a Vec{3, ...} using *
-    #
-    qn = quote
-        (*){T <: Real}(R::$(rot_type), X::Vec{3,T}) = rotate_point(R, X)
+    # N.B. this is now legacy
+    if (enable_mult)
+        qn = quote
+            (*){T <: Real}(R::$(rot_type), X::Vec{3,T}) = rotate(R, X)
+        end
+        append!(qb.args, qn.args)
     end
-    append!(qb.args, qn.args)
 
 
     #
@@ -118,9 +120,9 @@ for rt in RotTypeList
     # add some basic maths
     if !(rt <: RotMatrix) && (!(rt <: Quaternion))
         eval(add_maths(rt))
-    elseif (rt <: Quaternion)
+    elseif (rt <: Quaternion) && (enable_mult)
         # allow rotation via * with quaternions
-        eval(:((*){T <: Real}(R::$(rt), X::Vec{3,T}) = rotate_point(R, X)))
+        eval(:((*){T <: Real}(R::$(rt), X::Vec{3,T}) = rotate(R, X)))
     end
 end
 

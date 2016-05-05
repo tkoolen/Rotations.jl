@@ -32,7 +32,6 @@ function build_transform_paths()
             qb = quote
                 @inline call{T <: RotMatrix}(::Type{T}, X::$(rT)) = convert(T, X)
             end
-            println(qb)
             eval(qb)
         end
     end
@@ -44,11 +43,8 @@ build_transform_paths()
 # implementations
 #######################################
 
-
-"""
-function to convert the input quaternion to a rotation matrix
-"""
-function quat_to_rot(q::Quaternion)
+#=
+function quat_to_rot(q::Quaternion)  # version assumes q is normalized
 
     # get rotation matrix from quaternion
     xx = q.v1 * q.v1
@@ -67,6 +63,39 @@ function quat_to_rot(q::Quaternion)
                  2 * (xz - yw)        2 * (yz + xw)       1 - 2 * (xx + yy)])
 
 end
+=#
+
+
+"""
+function to convert the input quaternion to a rotation matrix
+"""
+function quat_to_rot(q::Quaternion)
+
+    ww = (q.s  * q.s)
+    xx = (q.v1 * q.v1)
+    yy = (q.v2 * q.v2)
+    zz = (q.v3 * q.v3)
+
+    m = sqrt(ww + xx + yy + zz) # norm
+
+    # get rotation matrix from quaternion
+    ww /= m
+    xx /= m
+    yy /= m
+    zz /= m
+    xy = (q.v1 * q.v2) / m
+    zw = (q.s  * q.v3) / m
+    xz = (q.v1 * q.v3) / m
+    yw = (q.v2 * q.s)  / m
+    yz = (q.v2 * q.v3) / m
+    xw = (q.s  * q.v1) / m
+
+    # initialize rotation part
+    return @fsa([ww + xx - yy - zz    2 * (xy - zw)       2 * (xz + yw);
+                 2 * (xy + zw)        ww - xx + yy - zz   2 * (yz - xw);
+                 2 * (xz - yw)        2 * (yz + xw)       ww - xx - yy + zz])
+
+end
 
 """
  a mutable version filling the 3x3 buffer R using the 4 element vector q
@@ -77,6 +106,7 @@ end
 function quat_to_rot!(R, q)
 
     # get rotation matrix from quaternion
+    ww = q[1] * q[1]
     xx = q[2] * q[2]
     yy = q[3] * q[3]
     zz = q[4] * q[4]
@@ -88,9 +118,9 @@ function quat_to_rot!(R, q)
     xw = q[1] * q[2]
 
     # fill the rotation matrix
-    R[1,1], R[1,2], R[1,3] = 1 - 2 * (yy + zz),        2 * (xy - zw),       2 * (xz + yw)
-    R[2,1], R[2,2], R[2,3] =     2 * (xy + zw),    1 - 2 * (xx + zz),       2 * (yz - xw)
-    R[3,1], R[3,2], R[3,3] =     2 * (xz - yw),        2 * (yz + xw),   1 - 2 * (xx + yy)
+    R[1,1], R[1,2], R[1,3] = ww + xx - yy - zz,        2 * (xy - zw),       2 * (xz + yw)
+    R[2,1], R[2,2], R[2,3] =     2 * (xy + zw),    ww - xx + yy - zz,       2 * (yz - xw)
+    R[3,1], R[3,2], R[3,3] =     2 * (xz - yw),        2 * (yz + xw),   ww - xx - yy + zz
 
 
 end
@@ -198,7 +228,7 @@ end
 """
 function to convert an arbitrary axis rotation to a quaternion
 """
-function arbaxis_to_quat(ar::AngleAxis)
+function angleaxis_to_quat(ar::AngleAxis)
 
     qtheta = cos(ar.theta / 2.0)
 
@@ -215,7 +245,7 @@ end
 """
 function to convert an a quaternion to an arbitrary axis rotation
 """
-function quat_to_arbaxis(q::Quaternion)
+function quat_to_angleaxis(q::Quaternion)
     theta = rot_angle(q)
     s = sqrt(q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3)
     hasnorm = s > 1e-12

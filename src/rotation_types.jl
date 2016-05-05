@@ -1,4 +1,4 @@
-import Base: convert, call, getindex, *, eltype
+import Base: convert, call, getindex, *, eltype, eye
 
 
 numel{T}(::Type{T}) = length(fieldnames(T))  # for getting the number of elements in the representation
@@ -21,25 +21,34 @@ trans_dict = Dict()
 """
 A type alias for rotation matrices (alias of Mat{3,3,T})
 """
-typealias RotMatrix{T <: Real}   Mat{3,3,T}
+typealias RotMatrix{eT <: Real}   Mat{3,3,eT}
 
-# Fixes for FixedSizeArray stuff
-@inline convert{T}(::Type{RotMatrix{T}}, X::RotMatrix{T}) = X                   # without this the conversion isn't type safe
-@inline convert{U}(::Type{RotMatrix}, mat::Matrix{U}) = RotMatrix{U}(mat)       # this hangs othewise
-@inline call{U}(::Type{RotMatrix}, mat::Matrix{U}) = convert(RotMatrix{U}, mat) # this hangs othewise
+# Fixes for FixedSizeArray stuff (based on version 0.1.0)
+@inline call{T}(::Type{RotMatrix}, mat::RotMatrix{T}) = RotMatrix{T}(mat)          # weird result otherwise
+@inline convert{T}(::Type{RotMatrix}, mat::Matrix{T}) = RotMatrix{T}(mat)          # this hangs othewise
+@inline call{T}(::Type{RotMatrix}, mat::Matrix{T}) = convert(RotMatrix{T}, mat)    # this hangs othewise
 
-# allow a RotMatrix to be constructructed from 9 elements
-@inline call(::Type{RotMatrix}, x1::Real, x2::Real, x3::Real, x4::Real, x5::Real, x6::Real, x7::Real, x8::Real, x9::Real) = RotMatrix((x1,x2,x3), (x4,x5,x6), (x7,x8,x9))
+@inline call{T}(::Type{RotMatrix}, xt::NTuple{9,T}) = RotMatrix{T}(xt[1:3], xt[4:6], xt[7:9])
+
+@inline call{T}(::Type{RotMatrix}, c1::NTuple{3,T}, c2::NTuple{3,T}, c3::NTuple{3,T}) = RotMatrix{T}(c1, c2, c3)
 @inline call{T1,T2,T3}(::Type{RotMatrix}, c1::NTuple{3,T1}, c2::NTuple{3,T2}, c3::NTuple{3,T3}) = RotMatrix{promote_type(T1,T2,T3)}(c1, c2, c3)
-@inline call{T}(::Type{RotMatrix{T}}, x1::Real, x2::Real, x3::Real, x4::Real, x5::Real, x6::Real, x7::Real, x8::Real, x9::Real) = RotMatrix{T}((T(x1),T(x2),T(x3)), (T(x4),T(x5),T(x6)), (T(x7),T(x8),T(x9)))
+
+@inline call{T}(::Type{RotMatrix}, x1::T, x2::T, x3::T, x4::T, x5::T, x6::T, x7::T, x8::T, x9::T) = RotMatrix{T}((x1,x2,x3), (x4,x5,x6), (x7,x8,x9))
+@inline call{T}(::Type{RotMatrix{T}}, x1::Real, x2::Real, x3::Real, x4::Real, x5::Real, x6::Real, x7::Real, x8::Real, x9::Real) =
+                    RotMatrix{T}((T(x1),T(x2),T(x3)), (T(x4),T(x5),T(x6)), (T(x7),T(x8),T(x9)))
+
 
 trans_dict[RotMatrix] = nothing  # the blessed type, everything goes through RotMatrixs
 
 
-# Quaternions have an extra bool field that type_methods.jl doesn't want to know about
+# number of numeric elements
 numel(::Type{RotMatrix}) = 9
 
 strip_eltype{T <: RotMatrix}(::Type{T}) = RotMatrix
+
+# define null rotations for convenience
+@inline eye(::Type{RotMatrix}) = eye(RotMatrix{Float64})
+
 
 
 ###################################################
@@ -70,6 +79,11 @@ numel(::Type{Quaternion}) = 4
 @inline getindex(X::Quaternion, i::Integer) = X.(i)
 
 strip_eltype{T <: Quaternion}(::Type{T}) = Quaternion
+
+# define null rotations for convenience
+@inline eye(::Type{Quaternion}) = Quaternion(1.0, 0.0, 0.0, 0.0)
+@inline eye{T}(::Type{Quaternion{T}}) = Quaternion{T}(T(1), T(0), T(0), T(0))
+
 
 
 ###################################################
@@ -136,6 +150,10 @@ trans_dict[SpQuat] = Quaternion
 @inline eltype{T}(::SpQuat{T}) = T
 strip_eltype{T <: SpQuat}(::Type{T}) = SpQuat
 
+# define null rotations for convenience
+@inline eye(::Type{SpQuat}) = SpQuat(0.0, 0.0, 0.0)
+@inline eye{T}(::Type{SpQuat{T}}) = SpQuat{T}(T(0), T(0), T(0))
+
 
 
 ###################################################
@@ -159,17 +177,17 @@ end
 @inline convert{T <: Real}(::Type{AngleAxis{T}}, aa::AngleAxis) = AngleAxis{T}(T(aa.theta), T(aa.axis_x), T(aa.axis_y), T(aa.axis_z))
 
 # define its interaction with other angle representations
-@inline convert(::Type{Quaternion}, aa::AngleAxis) = arbaxis_to_quat(aa)
-@inline convert{T}(::Type{Quaternion{T}}, aa::AngleAxis) = convert(Quaternion{T}, arbaxis_to_quat(aa))
+@inline convert(::Type{Quaternion}, aa::AngleAxis) = angleaxis_to_quat(aa)
+@inline convert{T}(::Type{Quaternion{T}}, aa::AngleAxis) = convert(Quaternion{T}, angleaxis_to_quat(aa))
 
-@inline convert(::Type{AngleAxis}, q::Quaternion) = quat_to_arbaxis(q)
-@inline convert{T}(::Type{AngleAxis{T}}, q::Quaternion) = convert(AngleAxis{T}, quat_to_arbaxis(q))
+@inline convert(::Type{AngleAxis}, q::Quaternion) = quat_to_angleaxis(q)
+@inline convert{T}(::Type{AngleAxis{T}}, q::Quaternion) = convert(AngleAxis{T}, quat_to_angleaxis(q))
 
 # get here from a rotation matrix
 @inline convert{T <: AngleAxis}(::Type{T}, R::RotMatrix) = convert(T, rot_to_quat(R))
 
 # go from an AngleAxis to any other representation via Quaternions
-# @inline convert{T}(::Type{T}, aa::AngleAxis) = convert(T, arbaxis_to_quat(spq))
+# @inline convert{T}(::Type{T}, aa::AngleAxis) = convert(T, angleaxis_to_quat(spq))
 trans_dict[AngleAxis] = Quaternion
 
 # accessors
@@ -182,8 +200,9 @@ trans_dict[AngleAxis] = Quaternion
 
 strip_eltype{T <: AngleAxis}(::Type{T}) = AngleAxis
 
-
-
+# define null rotations for convenience
+@inline eye(::Type{AngleAxis}) = AngleAxis(0.0, 1.0, 0.0, 0.0)
+@inline eye{T}(::Type{AngleAxis{T}}) = AngleAxis{T}(T(0), T(1), T(0), T(0))
 
 
 ###################################################
@@ -288,4 +307,14 @@ trans_dict[ProperEulerAngles] = RotMatrix
 @inline convert{ORD1, ORD2, eT1, eT2}(::Type{ProperEulerAngles{ORD1, eT1}}, ea::ProperEulerAngles{ORD2, eT2}) = convert(ProperEulerAngles{ORD1, eT1}, euler_to_rot(ea))
 
 strip_eltype{T <: ProperEulerAngles}(::Type{T}) = ProperEulerAngles{euler_order(T)}
+
+# define null rotations for convenience
+@inline eye(::Type{EulerAngles}) = EulerAngles(0.0, 0.0, 0.0)
+@inline eye{ORD}(::Type{EulerAngles{ORD}}) = EulerAngles{ORD}(0.0, 0.0, 0.0)
+@inline eye{ORD, T}(::Type{EulerAngles{ORD, T}}) = EulerAngles{ORD, T}(T(0), T(0), T(0))
+
+# define null rotations for convenience
+@inline eye(::Type{ProperEulerAngles}) = ProperEulerAngles(0.0, 0.0, 0.0)
+@inline eye{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD}(0.0, 0.0, 0.0)
+@inline eye{ORD, T}(::Type{ProperEulerAngles{ORD, T}}) = ProperEulerAngles{ORD, T}(T(0), T(0), T(0))
 

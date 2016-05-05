@@ -6,7 +6,7 @@ using Rotations
 
 verbose_rot_test = false
 
-
+import Rotations: numel
 numel{T <: Rotations.RotationTypes}(X::T) = Rotations.numel(Rotations.strip_eltype(T))
 numel{T}(X::T) = (T <: FixedSizeArrays.FixedArray) || (T <: FixedSizeArrays.AbstractArray)  ? length(X) : error("numel undefined for input of type $(T)")
 
@@ -78,30 +78,23 @@ for rT in Rotations.RotTypeList
     push!(rot_types, rT)
 end
 
-# define null rotations for conveniences
-null_rotation(::Type{RotMatrix}) = RotMatrix(eye(3))
-null_rotation(::Type{Quaternion}) = Quaternion(1.0,0,0,0)
-null_rotation(::Type{AngleAxis}) = AngleAxis(0.0, 1.0, 0, 0)
-null_rotation(::Type{SpQuat}) = SpQuat(0.0,0.0,0)
-null_rotation(::Type{EulerAngles}) = EulerAngles(0.0,0.0,0)
-null_rotation(::Type{ProperEulerAngles}) = ProperEulerAngles(0.0,0.0,0)
-null_rotation{ORD}(::Type{EulerAngles{ORD}}) = EulerAngles{ORD, Float64}(0.0,0.0,0)
-null_rotation{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD, Float64}(0.0,0.0,0)
-
 
 #########################################################################
 # Check fixed relationships
 #########################################################################
 
 # Do no rotation
-R = RotMatrix(eye(3))
+R = eye(RotMatrix{Float64})
 verbose_rot_test ? println("********************************\nIndentity checks\n********************************\n") : nothing
 for rT in rot_types
     verbose_rot_test ? println(rT) : nothing
     rot_var = rT(R)
-    null_var = null_rotation(rT)
+    null_var = eye(rT)
     @types_approx_eq(rot_var, null_var)
 end
+
+
+
 
 #########################################################################
 # Check conversion to and from mutable and immutable vectors,
@@ -122,7 +115,15 @@ for rT in rot_types
     @contents_approx_eq(rot_var, mvu)
 
     # import from mutable
-    rot_ivu = rT(mvu)
+    rot_mvu = rT(mvu)
+    @types_approx_eq(rot_var, rot_mvu)
+
+    # export to immutable
+    ivu = Vec(rot_var)
+    @contents_approx_eq(rot_var, ivu)
+
+    # import from immutable
+    rot_ivu = rT(ivu)
     @types_approx_eq(rot_var, rot_ivu)
 
     # test typed stuff
@@ -139,6 +140,16 @@ for rT in rot_types
         rot_mvt = rT(mvt)
         @contents_approx_eq_notype(rot_var, rot_mvt)
 
+        # export to immutable
+        ivt = Vec{numel(rT), eT}(rot_var)
+        ivc = convert(Vec{numel(rT), eT}, ivt)
+        @types_approx_eq(ivt, ivc)
+
+        # import from immutable
+        rot_ivt = rT(ivt)
+        @contents_approx_eq_notype(rot_var, rot_ivt)
+
+
         # and test the element conversion on the rotation parameterization directly
         if (length(rT.parameters) == 1) || (TypeVar != typeof(rT.parameters[end-1]))
             rot_c = convert(rT{eT}, rot_var)
@@ -146,6 +157,14 @@ for rT in rot_types
         end
     end
 end
+
+#########################################################################
+# Check that Quaternions can import a point
+#########################################################################
+
+verbose_rot_test ? println("********************************\nQuaternion point import checks\n********************************\n") : nothing
+@types_approx_eq(Quaternion([1.0,2.0,3.0]), Quaternion(0.0, 1.0, 2.0, 3.0))
+@types_approx_eq(Quaternion(Vec(1.0,2.0,3.0)), Quaternion(0.0, 1.0, 2.0, 3.0))
 
 
 #########################################################################
@@ -212,7 +231,7 @@ for rT in rot_types
         Xo = Rm * X  # Fixed size arrays better get this right
 
         R = rT(Rm)  # convert R to this formulation
-        Xo_t = R * X
+        Xo_t = rotate(R, X)
         @types_approx_eq_eps(Xo_t, Xo, 1e-10)
 
     end

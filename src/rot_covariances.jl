@@ -12,7 +12,7 @@ Inputs:
 
     oT_cov    - output type for the covariance matrix (default Matrix)
 
-    oT_mean   - output type for the covariance matrix (default Vector)
+    oT_mean   - output type for the mean matrix (default Vector)
 
 
 Experimental - This is not a fast implementation
