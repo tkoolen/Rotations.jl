@@ -1,10 +1,13 @@
 # Rotations.jl
 
+[![Build Status](https://travis-ci.org/FugroRoames/Rotations.jl.svg?branch=master)](https://travis-ci.org/FugroRoames/Rotations.jl)
+
+This package implements various 3D rotation parameterizations and defines conversions between them.
+
 ### Example Usage
 
 ```julia
 
-    using FixedSizeArrays
     using Rotations
 
     # create a rotation matrix
@@ -38,10 +41,6 @@
     Xo = rotate(spq, X)
 
 ```
-
-This package implements various 3D rotation parameterizations and defines conversions between them.  All rotation variables are stored as as immutable types.
-
-This package assumes [active (right handed) rotations](https://en.wikipedia.org/wiki/Active_and_passive_transformation) where applicable.
 
 ### Rotation Parameterizations
 
@@ -115,6 +114,10 @@ All parameterizations can be converted to and from mutable / immutable vectors, 
     q2 = Quaternion(v_immutable)
 
 ```
+
+### Notes
+
+This package assumes [active (right handed) rotations](https://en.wikipedia.org/wiki/Active_and_passive_transformation) where applicable.
 
 
 ### Why use immutables / FixedSizeArrays?
