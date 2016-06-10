@@ -89,7 +89,7 @@ numel(::Type{Quaternion}) = 4
 @inline getindex(X::Quaternion, i::Integer) = getfield(X, i)
 
 # angle and axis functions
-@inline rotation_angle(q::Quaternion) = 2 * acos(q.s)
+@inline rotation_angle(q::Quaternion) = 2 * acos(min(max(q.s, -1.0), 1.0)) # I think normalizing rounding errors will make things worse
 @inline function rotation_axis(q::Quaternion)
     aa = AngleAxis(q)
     Vec(aa.axis_x, aa.axis_y, aa.axis_z)
