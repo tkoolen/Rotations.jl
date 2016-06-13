@@ -3,7 +3,7 @@ import Base: convert
 
 
 # a sgn function
-@inline sgn{T}(x::T) = copysign(T(1), x)  #hmm, x = -0.0
+@inline sgn{T}(x::T) = copysign(one(T), x)  # N.B. sign(0.0) != sgn(0.0). sgn(-0.0) == -1 isn't what I want though
 
 """
 wraps theta into the range (-pi, pi]
@@ -135,7 +135,7 @@ end
 function to convert the input rotation matrix into a quaternion.
 """
 function rot_to_quat(R::RotMatrix)
-    q = Quaternion(sqrt(abs(1  + R[1,1] + R[2,2] + R[3,3])) / 2.0,
+    q = Quaternion(sqrt(abs(1  + R[1,1] + R[2,2] + R[3,3])) / 2,
                    copysign(sqrt(abs(1 + R[1,1] - R[2,2] - R[3,3]))/2, R[3,2] - R[2,3]),
                    copysign(sqrt(abs(1 - R[1,1] + R[2,2] - R[3,3]))/2, R[1,3] - R[3,1]),
                    copysign(sqrt(abs(1 - R[1,1] - R[2,2] + R[3,3]))/2, R[2,1] - R[1,2]),
@@ -152,7 +152,7 @@ end
 
 """
 function rot_to_quat!(q, R)
-    q[1] = sqrt(abs(1  + R[1,1] + R[2,2] + R[3,3])) / 2.0
+    q[1] = sqrt(abs(1  + R[1,1] + R[2,2] + R[3,3])) / 2
     q[2] = copysign(sqrt(abs(1 + R[1,1] - R[2,2] - R[3,3]))/2, R[3,2] - R[2,3])
     q[3] = copysign(sqrt(abs(1 - R[1,1] + R[2,2] - R[3,3]))/2, R[1,3] - R[3,1])
     q[4] = copysign(sqrt(abs(1 - R[1,1] - R[2,2] + R[3,3]))/2, R[2,1] - R[1,2])
@@ -201,7 +201,7 @@ end
 """
 function spquat_to_quat!(q, spq)
     alpha2 = spq[1] * spq[1] + spq[2] * spq[2] + spq[3] * spq[3]
-    q[1] = (1.0-alpha2) / (alpha2 + 1)
+    q[1] = (1 - alpha2) / (alpha2 + 1)
     qs = sgn(q[1])
     q[1] *= qs
     q[2], q[3], q[4] = qs * 2 * spq[1] / (alpha2 + 1),   qs * 2 * spq[2]  / (alpha2 + 1),  qs * 2 * spq[3] / (alpha2 + 1)
@@ -241,18 +241,18 @@ end
 """
 function to convert a quaternion to an arbitrary axis rotation
 """
-function quat_to_angleaxis{T}(q::Quaternion{T})
-    theta = 2*acos(q.s)
-    s = sqrt(q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3)  # = sin(theta/2) hopefully
-    return s > eps(T) ? AngleAxis(theta, q.v1 / s, q.v2 / s, q.v3 / s) : AngleAxis(theta, 1.0, 0.0, 0.0)
+function quat_to_angleaxis{T}(q::Quaternion{T})                        # TODO: make this differentiable by making a series expansion near s = 0
+    s = sqrt(q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3)
+    theta =  2 * atan2(s, q.s)
+    return s > 0 ? AngleAxis(theta, q.v1 / s, q.v2 / s, q.v3 / s) : AngleAxis(theta, one(theta), zero(theta), zero(theta))
 end
 
 """
 function to convert a rodrigues vector to an angle axis representation
 """
-function rodrigues_to_angleaxis{T}(rv::RodriguesVec{T})
-    theta = rotation_angle(rv)
-    return theta > eps(T) ? AngleAxis(theta, rv.sx / theta, rv.sy / theta, rv.sz / theta) : AngleAxis(zero(theta), one(theta), zero(theta), zero(theta)) # TODO: make this autodiff proof
+function rodrigues_to_angleaxis{T}(rv::RodriguesVec{T})                 # TODO: make this differentiable by making a series expansion near theta = 0
+    theta = norm(rv)
+    return theta > 0 ? AngleAxis(theta, rv.sx / theta, rv.sy / theta, rv.sz / theta) : AngleAxis(zero(theta), one(theta), zero(theta), zero(theta))
 end
 
 """
@@ -268,11 +268,16 @@ end
 """
 function to convert a a quaternion to a rodrigues vector
 """
-function quat_to_rodrigues{T}(q::Quaternion{T})                         # TODO: make this autodiff proof
-    theta = rotation_angle(q)
-    st = sin(theta / 2)
-    s = abs(st) <= eps(T) ? 1 : theta / st                              # why isn't cosinc a thing?
-    return RodriguesVec(s * q.v1, s * q.v2, s * q.v3 )
+function quat_to_rodrigues{T}(q::Quaternion{T})
+    s2 = q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3
+    if (s2 > 0)
+        cos_t2 = sqrt(s2)
+        theta = 2 * atan2(cos_t2, q.s)
+        sc = theta / cos_t2
+    else
+        sc = 2                 # N.B. the 2 "should" match the derivitive as cos_t2 -> 0
+    end
+    return RodriguesVec(sc * q.v1, sc * q.v2, sc * q.v3 )
 end
 
 """

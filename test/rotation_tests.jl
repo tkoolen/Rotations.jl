@@ -70,6 +70,7 @@ end
 #####################################################################################
 
 rot_types = Vector{Any}(0)
+ordered_type = Vector{Bool}(0)
 for rT in Rotations.RotTypeList
     if (length(rT.parameters) == 2)
 
@@ -77,11 +78,13 @@ for rT in Rotations.RotTypeList
         @compat order_type = supertype(Rotations.euler_order(rT))
         for order in subtypes(order_type)
             push!(rot_types, rT{order})
+            push!(ordered_type, false)
         end
     end
 
     # ordered ones should have defaults so leave them in
     push!(rot_types, rT)
+    push!(ordered_type, (length(rT.parameters) == 2))
 end
 
 
@@ -108,12 +111,30 @@ end
         end
     end
 
-    # convert Int -> Float on construction
-    @testset "Testing integer construction (should convert to Float64)" begin
-        @testset "$(rT)" for rT in setdiff(rot_types, [RotMatrix])
-            rot_var1 = rT(zeros(Int, Rotations.numel(rT))...)
-            rot_var2 = rT(zeros(Rotations.numel(rT))...)
-            @types_approx_eq(rot_var1, rot_var2)
+    # Constructor tests
+    @testset "Testing constructors" begin
+        @testset "Testing integer construction (should convert to Float64)" begin
+            @testset "$(rT)" for rT in setdiff(rot_types, [RotMatrix])
+                rot_var1 = rT(zeros(Int, Rotations.numel(rT))...)
+                rot_var2 = rT(zeros(Rotations.numel(rT))...)
+                @types_approx_eq(rot_var1, rot_var2)
+            end
+        end
+
+        @testset "Testing mixed element construction" begin
+            @testset "$(rT)" for rT in rot_types
+                rot_var1 = rT(vcat(zero(Float32), zeros(Rotations.numel(rT)-1))...)
+                rot_var2 = rT(zeros(Rotations.numel(rT))...)
+                @types_approx_eq(rot_var1, rot_var2)
+            end
+        end
+
+        # test the axis vector constructor for angle axis
+        Iaa = eye(AngleAxis)
+        @testset "Testing Angle Axis vector axis construction" begin
+            @test Iaa == AngleAxis(rotation_angle(Iaa), rotation_axis(Iaa))
+            @test Iaa == AngleAxis(rotation_angle(Iaa), Vector(rotation_axis(Iaa)))
+            @test_throws DimensionMismatch AngleAxis(0.0, [1.0, 0, 0, 0])
         end
     end
 
@@ -142,19 +163,27 @@ end
     #########################################################################
 
     # a random rotation
-    @testset "Rotation Points" begin
-        repeats = 1000
+    @testset "Rotate Points" begin
+        thresh, repeats = 1e-10, 1000
         @testset "$(rT)" for rT in rot_types
             srand(0)
             for i = 1:repeats
-                Rm = RotMatrix(nquatrand())
+                q = i == 1 ? Quaternion(1.0, 0.0, 0.0, 0.0) : nquatrand()  # the identity is a bit special for most parametrizations
+                Rm = RotMatrix(q)
                 X = Vec{3, Float64}(randn(), randn(), randn())  # a point to rotate
                 Xo = Rm * X  # Fixed size arrays better get this right
 
                 R = rT(Rm)  # convert R to this formulation
                 Xo_t = rotate(R, X)
-                @types_approx_eq_eps(Xo_t, Xo, 1e-10)
+                @types_approx_eq_eps(Xo_t, Xo, thresh)
             end
+
+            # rotate a Vector as well
+            Rm = RotMatrix(nquatrand())
+            X = Vec{3, Float64}(randn(), randn(), randn())  # a point to rotate
+            Xo = Rm * X
+            Xo_t = rotate(rT(Rm), [Float32(X[i]) for i in 1:3])
+            @test reduce(&, [abs(Xo[i] - Xo_t[i]) <= 1e-6 for i in 1:3])
         end
     end
 
@@ -165,15 +194,17 @@ end
 
     # test random round trip conversions
     @testset "Rotation parameterization conversion checks" begin
-        repeats, thresh = 100, 1e-6
+        repeats, thresh = 100, 1e-12
         I = eye(RotMatrix{Float64})
         for rT_in in rot_types
             srand(0)
+
+            # straight conversions
             @testset "$(rT_in) -> $(rT_out)" for rT_out in rot_types
                 for i = 1:repeats                               # and each test
 
                     # start with a random quaternion
-                    q = nquatrand()
+                    q = i == 1 ? Quaternion(1.0, 0.0, 0.0, 0.0) : nquatrand()  # the identity is a bit special for most parametrizations
                     X = convert(rT_in, q)
 
                     # round trip conversion
@@ -185,13 +216,39 @@ end
                     @test rd <= thresh
                 end
             end
+
+            # element type conversion
+            if (length(rT_in.parameters) == 1) || (TypeVar != typeof(rT_in.parameters[end-1]))          # dont try when there'a missing order parameter
+                @testset "$(rT_in) -> $(rT_out) with element type conversion" for rT_out in rot_types[!ordered_type]
+
+                    # start with a random quaternion
+                    q = Quaternion(1.0, 0.0, 0.0, 0.0) # the identity is a bit special for most parametrizations
+                    X = convert(rT_in{Float64}, q)
+
+                    # check type inference without any element type conversions
+                    @inferred convert(rT_out, X)
+                    @inferred convert(rT_in, convert(rT_out, X))
+
+                    # check type inference with element type conversions
+                    @inferred convert(rT_out{Float32}, X)
+                    @inferred convert(rT_in{Float64}, convert(rT_out{Float32}, X))
+                    Xd = convert(rT_in{Float64}, convert(rT_out{Float32}, X))
+
+                    # compare rotations before and after the round trip
+                    Rout = RotMatrix(X) * RotMatrix(Xd)'  # should be the identity
+                    rd = vecnorm(I - Rout)
+                    @test rd <= thresh
+                end
+            end
         end
     end
 
 
-    #########################################################################
+
+    #####################################################################################
     # Check that Quaternions can import a 3 vector correctly
-    #########################################################################
+    # (this is to make sure the "point" import functions from Quaternions.jl still work)
+    #####################################################################################
 
     @testset "Quaternion 3 vector import checks" begin
         @types_approx_eq(Quaternion([1.0,2.0,3.0]), Quaternion(0.0, 1.0, 2.0, 3.0))
@@ -222,6 +279,11 @@ end
                 end
             end
         end
+
+        # make sure a slightly unnormalized Quaternion doesn't throw when extracting the angle
+        q = Quaternion(1.0000000000000002, -5.040577330528428e-13, 5.663457441733299e-13, 2.452760217153127e-13)
+        @test abs(rotation_angle(q)) < thresh
+
     end
 
     #########################################################################
@@ -237,20 +299,29 @@ end
             rot_var = eye(rT)
 
             # export to mutable
+            @inferred vec(rot_var)
             mvu = vec(rot_var)
             @contents_approx_eq(rot_var, mvu)
 
             # import from mutable
+            if (rT != RotMatrix)
+                @inferred rT(mvu)   # Julia v0.4 (v0.5 can) can't infer the type here for RotMatrix and I don't know why.  whatevs
+            end
             rot_mvu = rT(mvu)
             @types_approx_eq(rot_var, rot_mvu)
 
             # export to immutable
+            @inferred Vec(rot_var) # Julia v0.4 again
             ivu = Vec(rot_var)
             @contents_approx_eq(rot_var, ivu)
 
             # import from immutable
+            if (rT != RotMatrix)
+                @inferred rT(ivu)  # Julia v0.4 (v0.5 can) can't infer the type here for RotMatrix and I don't know why.  whatevs
+            end
             rot_ivu = rT(ivu)
             @types_approx_eq(rot_var, rot_ivu)
+
 
             # test typed stuff
             order_param = (length(rT.parameters) > 1) && (TypeVar == typeof(rT.parameters[end-1]))  # doe it have a missing order template parameter?

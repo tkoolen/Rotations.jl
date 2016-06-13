@@ -43,9 +43,9 @@ function rotate(aa::AngleAxis, X::Vec{3})
 end
 
 # Rodrigues formula starting with a Rodrigues vector
-function rotate(rv::RodriguesVec, X::Vec{3})
+function rotate{T}(rv::RodriguesVec{T}, X::Vec{3})
     theta = norm(rv)
-    if (theta >= eps(theta))
+    if (theta > eps(T)) # use eps here because we have the series expansion defined
         Xo = rotate(AngleAxis(rv), X)
     else
         w_cross_pt = Vec(rv[2] * X[3] - rv[3] * X[2],

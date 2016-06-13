@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/FugroRoames/Rotations.jl.svg?branch=master)](https://travis-ci.org/FugroRoames/Rotations.jl)
 
-This package implements various 3D rotation parameterizations and defines conversions between them.
+This package implements various 3D rotation parameterizations and defines conversions between them.  Parameterizations encode rotations about the origin (see [CoordinateTransformations.jl](https://github.com/FugroRoames/CoordinateTransformations.jl) or [AffineTransforms.jl](https://github.com/timholy/AffineTransforms.jl) for composing more general transformations).
 
 ### Example Usage
 

@@ -8,17 +8,17 @@ function expr_gen(typed, fields)
     append!(expr.args, [acc(field) for field in fields])
     return expr
 end
-untyped_acc(i) = isa(i, Int) ? :(X[$(i)]) : :(X.$(i))
-typed_acc(i) = isa(i, Int) ? :(T(X[$(i)])) : :(T(X.$(i)))
+untyped_acc(i) = isa(i, Int) ? :(getindex(X, $(i))) : :(X.$(i))
+typed_acc(i) = isa(i, Int) ? :(T(getindex(X, $(i)))) : :(T(X.$(i)))
 
 
 #
-# Define special import rules for Quaternions because we want to enable 3 vectors and 4 vectors to be promoted to Quaternions
+# Define special import rules for Quaternions because we want to enable 3 vectors and 4 vectors to be promoted to quaternions
 #
-@inline convert{T <: Quaternion, U <: Real}(::Type{T}, X::Vector{U}) =
+@inline convert{T <: Quaternion, U}(::Type{T}, X::Vector{U}) =
         (length(X) == 3) ? Quaternion(zero(U), X[1], X[2], X[3], false) : Quaternion(X[1], X[2], X[3], X[4], false)  # allow 3 Vec -> Quat
-@compat @inline (::Type{T}){T <: Quaternion, U <: Real}(X::Vector{U}) = convert(T, X)
-@inline convert{T <: Quaternion, U <: Real}(::Type{T}, X::FixedVector{3, U}) = T(0.0, X[1], X[2], X[3], false)
+@compat @inline (::Type{T}){T <: Quaternion, U}(X::Vector{U}) = convert(T, X)
+@inline convert{T <: Quaternion, U}(::Type{T}, X::FixedVector{3, U}) = T(0.0, X[1], X[2], X[3], false)
 
 
 
@@ -53,31 +53,31 @@ function add_methods(rot_type)
         # convert to a mutable vector
         @inline vec(X::$(rot_type)) = vcat($(untyped_field_expr.args...))
         @inline convert(::Type{Vector}, X::$(rot_type)) = vec(X)
-        @inline convert{T <: Real}(::Type{Vector{T}}, X::$(rot_type)) = vcat($(typed_field_expr.args...))
+        @inline convert{T}(::Type{Vector{T}}, X::$(rot_type)) = vcat($(typed_field_expr.args...))
         @compat @inline (::Type{T}){T <: Vector}(X::$(rot_type)) = convert(T, X)
 
         # convert from a mutable vector
         if ($(rot_type) != Quaternion)  # Quaternions has this defined already
-            @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::Vector{U}) = T($(untyped_indexed_expr.args...))
-            @compat @inline (::Type{T}){T <: $(rot_type), U <: Real}(X::Vector{U}) = convert(T, X)
+            convert{T <: $(rot_type), U}(::Type{T}, X::Vector{U}) = (T)($(untyped_indexed_expr.args...))
+            @compat (::Type{T}){T <: $(rot_type), U}(X::Vector{U}) = convert(T, X)
         end
 
         # convert to an immutable vector
-        @inline convert(::Type{Vec}, X::$(rot_type)) = Vec($(untyped_field_expr.args...))
-        @inline convert{T <: Real}(::Type{Vec{$(numel(rot_type)), T}}, X::$(rot_type)) = Vec($(typed_field_expr.args...))
+        @inline convert(::Type{Vec}, X::$(rot_type)) = Vec{$(numel(rot_type)), eltype(X)}($(untyped_field_expr.args...))
+        @inline convert{T}(::Type{Vec{$(numel(rot_type)), T}}, X::$(rot_type)) = Vec{$(numel(rot_type)), T}($(typed_field_expr.args...))
         @compat @inline (::Type{Vec})(X::$(rot_type)) = convert(Vec, X)
-        @compat @inline (::Type{Vec{$(numel(rot_type)), T}}){T <: Real}(X::$(rot_type)) = convert(Vec{$(numel(rot_type)), T}, X)
+        @compat @inline (::Type{Vec{$(numel(rot_type)), T}}){T}(X::$(rot_type)) = convert(Vec{$(numel(rot_type)), T}, X)
 
         # convert from an immutable vector
-        @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::FixedVector{$(numel(rot_type)), U}) = T($(untyped_indexed_expr.args...))
-        @compat @inline (::Type{T}){T <: $(rot_type), U <: Real}(X::FixedVector{$(numel(rot_type)), U}) = convert(T, X)
+        @inline convert{T <: $(rot_type), U}(::Type{T}, X::FixedVector{$(numel(rot_type)), U}) = T($(untyped_indexed_expr.args...))
+        @compat @inline (::Type{T}){T <: $(rot_type), U}(X::FixedVector{$(numel(rot_type)), U}) = convert(T, X)
 
         # convert to a tuple
         # @inline tuple(X::$(rot_type)) = tuple($(untyped_field_expr.args...))
 
         # convert from a tuple
-        @inline convert{T <: $(rot_type), U <: Real}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = T($(untyped_indexed_expr.args...))
-        @compat @inline (::Type{T}){T <: $(rot_type), U <: Real}(X::NTuple{$(numel(rot_type)), U}) = convert(T, X)
+        @inline convert{T <: $(rot_type), U}(::Type{T}, X::NTuple{$(numel(rot_type)), U}) = T($(untyped_indexed_expr.args...))
+        @compat @inline (::Type{T}){T <: $(rot_type), U}(X::NTuple{$(numel(rot_type)), U}) = convert(T, X)
 
 
     end
