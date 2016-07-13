@@ -324,7 +324,7 @@ end
 
 
             # test typed stuff
-            order_param = (length(rT.parameters) > 1) && (TypeVar == typeof(rT.parameters[end-1]))  # doe it have a missing order template parameter?
+            order_param = (length(rT.parameters) > 1) && (TypeVar == typeof(rT.parameters[end-1]))  # does it have a missing order template parameter?
             @testset "$(order_param ? rT{rT.parameters[1], eT} : rT{eT})" for eT in [Float32]#eltypes
 
                 # export to mutable

@@ -15,12 +15,14 @@ include("rotation_conversions.jl")
 include("euler_conversions.jl")
 include("type_methods.jl")
 include("rotate.jl")
-include("quaternion_ops.jl")
+include("quaternion_funcs.jl")
+include("spquat_funcs.jl")
 include("math_funcs.jl")
-include("rot_covariances.jl")
-
 
 export
+
+        # A union for defined rotation parameterizations
+        RotationTypes,
 
         # Euler angle ordering
         EulerOrder,

@@ -175,6 +175,10 @@ append!(defined_conversions, [(Quaternion, SpQuat), (SpQuat, Quaternion)])
 # define multiplication for SpQuat corresponding to combining rotations
 @inline *(lhs::SpQuat, rhs::SpQuat) = SpQuat(Quaternion(lhs) * Quaternion(rhs))
 
+# allow multiplication with Quaternions as well (return as the left hand side argument)
+@inline *(lhs::SpQuat, rhs::Quaternion) = SpQuat(Quaternion(lhs) * rhs)
+@inline *(lhs::Quaternion, rhs::SpQuat) = lhs * Quaternion(rhs)
+
 # rotation properties
 @inline rotation_angle(spq::SpQuat) = rotation_angle(Quaternion(spq))
 @inline rotation_axis(spq::SpQuat) = rotation_axis(Quaternion(spq))
@@ -431,4 +435,10 @@ strip_eltype{T <: ProperEulerAngles}(::Type{T}) = ProperEulerAngles{euler_order(
 @inline eye(::Type{ProperEulerAngles}) = ProperEulerAngles(0.0, 0.0, 0.0)
 @inline eye{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD}(0.0, 0.0, 0.0)
 @inline eye{ORD, T}(::Type{ProperEulerAngles{ORD, T}}) = ProperEulerAngles{ORD, T}(zero(T), zero(T), zero(T))
+
+
+#
+# build a union for all of out rotation types
+#
+RotationTypes = Union{RotMatrix, Quaternion, SpQuat, AngleAxis, RodriguesVec, EulerAngles, ProperEulerAngles}
 

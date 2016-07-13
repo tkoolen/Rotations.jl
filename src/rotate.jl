@@ -31,7 +31,7 @@ end
 
 # Using Rodrigues formula on an AngleAxis parameterization (assume unit axis length) to do the rotation
 # (implementation from: https://ceres-solver.googlesource.com/ceres-solver/+/1.10.0/include/ceres/rotation.h)
-function rotate(aa::AngleAxis, X::Vec{3})
+function rotate(aa::AngleAxis, X::FixedVector{3})
     w = rotation_axis(aa)
     ct, st = cos(aa.theta), sin(aa.theta)
     w_cross_pt = cross(w, X)
@@ -43,7 +43,7 @@ function rotate(aa::AngleAxis, X::Vec{3})
 end
 
 # Rodrigues formula starting with a Rodrigues vector
-function rotate{T}(rv::RodriguesVec{T}, X::Vec{3})
+function rotate{T}(rv::RodriguesVec{T}, X::FixedVector{3})
     theta = norm(rv)
     if (theta > eps(T)) # use eps here because we have the series expansion defined
         Xo = rotate(AngleAxis(rv), X)
