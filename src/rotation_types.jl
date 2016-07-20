@@ -1,5 +1,336 @@
-import Base: convert, getindex, *, eltype, eye, norm, inv
-import Quaternions: axis, angle
+"""
+    abstract Rotation{T} <: StaticMatrix{T}
+
+An abstract type representing 3D rotations. More abstractly, they represent
+3×3 unitary (orthogonal) matrices.
+"""
+abstract Rotation{T} <: StaticMatrix{T}
+
+Base.size{R <: Rotation}(::Union{R,Type{R}}) = (3,3)
+Base.ctranspose(r::Rotation) = inv(r)
+Base.transpose{T<:Real}(r::Rotation{T}) = inv(r)
+
+# Rotation matrices should be orthoginal/unitary. Only the operations we define,
+# like multiplication, will stay as Rotations, otherwise users will get an
+# SMatrix{3,3} (e.g. rot1 + rot2 -> SMatrix)
+Base.@pure StaticArrays.similar_type{R <: Rotation}(::Union{R,Type{R}}) = SMatrix{3, 3, eltype(R)}
+Base.@pure StaticArrays.similar_type{R <: Rotation, T}(::Union{R,Type{R}}, ::Type{T}) = SMatrix{3, 3, T}
+
+################################################################################
+################################################################################
+"""
+    immutable RotMatrix{T} <: Rotation{T}
+
+A statically-sized, 3×3 unitary (orthogonal) matrix.
+
+Note: the orthonormality of the input matrix is not checked by the constructor.
+"""
+immutable RotMatrix{T} <: Rotation{T} # which is <: AbstractMatrix{T}
+    mat::SMatrix{3, 3, T, 9} # The final parameter to SMatrix is the "length" of the matrix, 3 × 3 = 9
+end
+
+# These 2 functions (plus size) are enough to satisfy the entire StaticArrays interface:
+@inline (::Type{RM}){RM<:RotMatrix}(t::NTuple{9}) = RM(SMatrix{3,3}(t))
+Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Integer) = r.mat[i]
+
+# A rotation is more-or-less defined as being an orthogonal (or unitary) matrix
+Base.inv(r::RotMatrix) = RotMatrix(r.mat')
+
+# A useful constructor for identity rotation (eye is already provided by StaticArrays, but needs an eltype)
+@inline Base.eye(::Type{RotMatrix}) = eye(RotMatrix{Float64})
+
+# By default, composition of rotations will go through RotMatrix, unless overridden
+@inline *(r1::Rotation, r2::Rotation) = RotMatrix(r1) * RotMatrix(r2)
+@inline *(r1::RotMatrix, r2::Rotation) =r1 * RotMatrix(r2)
+@inline *(r1::Rotation, r2::RotMatrix) = RotMatrix(r1) * r2
+@inline *(r1::RotMatrix, r2::RotMatrix) = RotMatrix(r1.mat * r2.mat) # TODO check that this doesn't involve extra copying.
+
+# Removes module name from output, to match other types
+function Base.summary(r::RotMatrix)
+    "3×3 RotMatrix{$(eltype(r))})"
+end
+
+################################################################################
+################################################################################
+"""
+    Quat{T} <: Rotation{T}
+    Quat(w, x, y, z)
+
+The `Quat` type is a 3×3 matrix representation of a normalized quaternion.
+They allow you to transparently use (fast) quaternion algebra to store, compose
+and invert 3D rotations, while at the same time letting you apply rotations
+through matrix-vector multiplication.
+
+Note: the constructor will always renormalize the input so that the quaternion
+has length 1 (w² + x² + y² + z² = 1), and the rotation matrix is orthogonal.
+"""
+immutable Quat{T} <: Rotation{T}
+    w::T
+    x::T
+    y::T
+    z::T
+
+    # For the moment we ensure that it is normalized upon construction.
+    function Quat(w, x, y, z)
+        norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
+        # Should this be an error or warning, if it isn't approximately normalized? E.g.:
+        #if norm !≈ 1
+        #    error("Expected a normalized quaternion") # or warn() ?
+        #end
+        new(w/norm, x/norm, y/norm, z/norm)
+    end
+end
+
+# StaticArrays will take over *all* the constructors and put everything in a tuple...
+# but this isn't quite what we mean when we have 4 inputs (not 9).
+@inline (::Type{Quat}){W,X,Y,Z}(w::W, x::X, y::Y, z::Z) = Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z)
+
+# These 2 functions are enough to satisfy the entire StaticArrays interface:
+function (::Type{RQ}){RQ<:Quat}(t::NTuple{9})
+    q = Quat(sqrt(abs(1  + t[1] + t[5] + t[9])) / 2,
+                copysign(sqrt(abs(1 + t[1] - t[5] - t[9]))/2, t[6] - t[8]),
+                copysign(sqrt(abs(1 - t[1] + t[5] - t[9]))/2, t[7] - t[3]),
+                copysign(sqrt(abs(1 - t[1] - t[5] + t[9]))/2, t[2] - t[4]))
+end
+
+function Base.getindex(q::Quat, i::Integer)
+    if i == 1
+        ww = (q.w * q.w)
+        xx = (q.x * q.x)
+        yy = (q.y * q.y)
+        zz = (q.z * q.z)
+
+        ww + xx - yy - zz
+    elseif i == 2
+        xy = (q.x * q.y)
+        zw = (q.w * q.z)
+
+        2 * (xy + zw)
+    elseif i == 3
+        xz = (q.x * q.z)
+        yw = (q.y * q.w)
+
+        2 * (xz - yw)
+    elseif i == 4
+        xy = (q.x * q.y)
+        zw = (q.w * q.z)
+
+        2 * (xy - zw)
+    elseif i == 5
+        ww = (q.w * q.w)
+        xx = (q.x * q.x)
+        yy = (q.y * q.y)
+        zz = (q.z * q.z)
+
+        ww - xx + yy - zz
+    elseif i == 6
+        yz = (q.y * q.z)
+        xw = (q.w * q.x)
+
+        2 * (yz + xw)
+    elseif i == 7
+        xz = (q.x * q.z)
+        yw = (q.y * q.w)
+
+        2 * (xz + yw)
+    elseif i == 8
+        yz = (q.y * q.z)
+        xw = (q.w * q.x)
+
+        2 * (yz - xw)
+    elseif i == 9
+        ww = (q.w * q.w)
+        xx = (q.x * q.x)
+        yy = (q.y * q.y)
+        zz = (q.z * q.z)
+
+        ww - xx - yy + zz
+    else
+        throw(BoundsError(r,i))
+    end
+end
+
+# This speeds up some StaticArray methods (such as conversion to RotMatrix)
+function Base.convert(::Type{Tuple}, q::Quat)
+    ww = (q.w * q.w)
+    xx = (q.x * q.x)
+    yy = (q.y * q.y)
+    zz = (q.z * q.z)
+    xy = (q.x * q.y)
+    zw = (q.w * q.z)
+    xz = (q.x * q.z)
+    yw = (q.y * q.w)
+    yz = (q.y * q.z)
+    xw = (q.w * q.x)
+
+    # initialize rotation part
+    return (ww + xx - yy - zz,
+            2 * (xy + zw),
+            2 * (xz - yw),
+            2 * (xy - zw),
+            ww - xx + yy - zz,
+            2 * (yz + xw),
+            2 * (xz + yw),
+            2 * (yz - xw),
+            ww - xx - yy + zz)
+end
+
+function Base.:*(q::Quat, x::AbstractVector)
+    if length(X) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(X))")
+    end
+
+    qo = (-q.x * X[1] - q.y * X[2] - q.z * X[3],
+           q.w * X[1] + q.y * X[3] - q.z * X[2],
+           q.w * X[2] - q.x * X[3] + q.z * X[1],
+           q.w * X[3] + q.x * X[2] - q.y * X[1])
+
+    Xo = SVector(-qo[1] * q.x + qo[2] * q.w - qo[3] * q.z + qo[4] * q.y,
+                 -qo[1] * q.y + qo[2] * q.z + qo[3] * q.w - qo[4] * q.x,
+                 -qo[1] * q.z - qo[2] * q.y + qo[3] * q.x + qo[4] * q.w)
+end
+
+# TODO consider Ac_mul_B, etc...
+function Base.:*(q1::Quat, q2::Quat)
+    Quat(q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z,
+            q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y,
+            q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x,
+            q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w)
+end
+
+function Base.inv(q::Quat)
+    Quat(q.w, -q.x, -q.y, -q.z)
+end
+
+@inline Base.eye(::Type{Quat}) = Quat(1.0, 0.0, 0.0, 0.0)
+@inline Base.eye{T}(::Type{Quat{T}}) = Quat{T}(one(T), zero(T), zero(T), zero(T))
+
+# Need a good output representation
+function Base.summary(q::Quat)
+    "3×3 Quat{$(eltype(q))}($(q.w), $(q.x), $(q.y), $(q.z))"
+end
+
+#=
+function Base.show(io::IO, mime::(MIME"text/plain"), q::Quat)
+    if get(io, :compact, false)
+        print(io, "Quat(")
+        print(io, q.w) # Shorter printing of numbers than "$(q.w)"
+        print(io, ", ")
+        print(io, q.x)
+        print(io, ", ")
+        print(io, q.y)
+        print(io, ", ")
+        print(io, q.z)
+        print(io, ")")
+    else
+        # Force the matrix-header to include quaternion parameters.
+        println(io, "3×3 Quat{$(eltype(q))}($(q.w), $(q.x), $(q.y), $(q.z)):")
+        Base.print_matrix(IOContext(io, :compact => true), q)
+        println(io)
+    end
+end
+=#
+
+################################################################################
+################################################################################
+"""
+    immutable SPQuat{T} <: Rotation{T}
+    SPQuat(x, y, z)
+
+A SPQuat is a 3D rotation represented by the "stereographic projection" of a normalized quaternion (shortened to "SPQuat"), which is
+a 3-element parametrization of a unit quaternion Q formed by the intersection of a line from [-1,0,0,0] to Q, with a plane containing the origin and with normal direction [1,0,0,0]. This
+is a compact representation of rotations where the derivitives of the rotation matrix's elements w.r.t. the SPQuat parameters are rational functions (making them useful for optimization).
+
+See:
+
+    [1] "A Recipe on the Parameterization of Rotation Matrices for Non-Linear Optimization using Quaternions",
+    Terzakis, Culverhouse, Bugmann, Sharma, Sutton,
+    MIDAS technical report, 2011
+    http://www.tech.plymouth.ac.uk/sme/springerusv/2011/publications_files/Terzakis%20et%20al%202012,%20A%20Recipe%20on%20the%20Parameterization%20of%20Rotation%20Matrices...MIDAS.SME.2012.TR.004.pdf
+
+    Note 1: the singularity (origin) has been moved from [0,0,0,-1] in Ref[1] to [-1,0,0,0], so the 0 rotation quaternion [1,0,0,0] maps to [0,0,0] as opposed of to [1,0,0].
+    Note 2: the quaternion rotation ambiguity q = -q means there will be a rotation with ||SPQuat|| <= 1 and an equivilent rotation with ||SPQuat|| > 1.  This package
+            uses the solution with ||SPQuat|| <= 1
+    Note 3: it is safe to assume that the corresponding matrix is orthogonal/unitary for any input x, y, z.
+
+"""
+immutable SPQuat{T} <: Rotation{T}
+    x::T
+    y::T
+    z::T
+
+    # TODO should we enforce norm <= 1?
+end
+
+# StaticArrays will take over *all* the constructors and put everything in a tuple...
+# but this isn't quite what we mean when we have 3 inputs (not 9).
+@inline (::Type{SPQuat}){X,Y,Z}(x::X, y::Y, z::Z) = SPQuat{promote_type(promote_type(X, Y), Z)}(x, y, z)
+
+# These 2 functions are enough to satisfy the entire StaticArrays interface:
+@inline (::Type{SPQuat})(t::NTuple{9}) = SPQuat(Quat(t))
+@inline Base.getindex(spq::SPQuat, i::Integer) = Quat(spq)[i]
+
+@inline function Base.convert{Q <: Quat}(::Type{Q}, spq::SPQuat)
+    # Both the sign and norm of the Quat is automatically dealt with in its inner constructor
+    return Q(1 - (spq.x*spq.x + spq.y*spq.y + spq.z*spq.z), 2*spq.x, 2*spq.y, 2*spq.z)
+end
+
+@inline function Base.convert{SPQ <: SPQuat}(::Type{SPQ}, q::Quat)
+    alpha2 = (1 - q.w) / (1 + q.w) # <= 1 since q.w >= 0
+    spq = SPQ(q.x * (alpha2 + 1)*0.5,  q.y * (alpha2 + 1)*0.5, q.z * (alpha2 + 1)*0.5)
+end
+
+@inline Base.convert(::Type{Tuple}, spq::SPQuat) = Tuple(Quat(spq))
+
+@inline Base.:*(spq::SPQuat, x::AbstractVector) = Quat(spq) * x
+
+@inline Base.:*(spq::SPQuat, r::Rotation) = Quat(spq) * r
+@inline Base.:*(r::Rotation, spq::SPQuat) = r * Quat(spq)
+@inline Base.:*(spq1::SPQuat, spq2::SPQuat) = SPQuat(Quat(spq1) * Quat(spq2))
+
+@inline Base.inv(spq::SPQuat) = SPQuat(-spq.x, -spq.y, -spq.z)
+
+@inline Base.eye(::Type{SPQuat}) = SPQuat(0.0, 0.0, 0.0)
+@inline Base.eye{T}(::Type{SPQuat{T}}) = SPQuat{T}(zero(T), zero(T), zero(T))
+
+# rotation properties
+@inline rotation_angle(spq::SPQuat) = rotation_angle(Quaternion(spq))
+@inline rotation_axis(spq::SPQuat) = rotation_axis(Quaternion(spq))
+
+# Need SPQuat parameters in the output representation
+function Base.summary(spq::SPQuat)
+    "3×3 SPQuat{$(eltype(spq))}($(spq.x), $(spq.y), $(spq.z))"
+end
+
+#=
+function Base.show(io::IO, mime::(MIME"text/plain"), spq::SPQuat)
+    if get(io, :compact, false)
+        print(io, "SPQuat(")
+        print(io, spq.x)
+        print(io, ", ")
+        print(io, spq.y)
+        print(io, ", ")
+        print(io, spq.z)
+        print(io, ")")
+    else
+        # Force the matrix-header to include quaternion parameters.
+        println(io, "3×3 SPQuat{$(eltype(spq))}($(spq.x), $(spq.y), $(spq.z)):")
+        Base.print_matrix(IOContext(io, :compact => true), spq)
+        println(io)
+    end
+end
+=#
+
+
+
+
+
+
+
+
+#=
+#import Base: convert, getindex, *, eltype, eye, norm, inv
+#import Quaternions: axis, angle
 
 @deprecate(rot_angle, rotation_angle)
 
@@ -17,11 +348,7 @@ numel{T}(::Type{T}) = length(fieldnames(T))  # for getting the number of element
                                              # e.g. length(fieldnames(Quaternion)) == 5    # it has a normalized field
                                              # e.g. numel(Quaternion) == 4                 # what we want
 
-###################################################
-# Rotation matrix (typeofalias of Mat{3,3,Float64})
-# N.B. all other parameterizations T should implement
-# a convert_rotation(T, RotMatrix) method
-###################################################
+
 
 """
 A type alias for rotation matrices (alias of Mat{3,3,T})
@@ -54,8 +381,8 @@ strip_eltype{T <: RotMatrix}(::Type{T}) = RotMatrix
 
 # define null rotations for convenience
 @inline eye(::Type{RotMatrix}) = eye(RotMatrix{Float64})
-
-
+=#
+#=
 
 ###################################################
 # Quaternions
@@ -92,20 +419,20 @@ numel(::Type{Quaternion}) = 4
 @inline function rotation_angle(q::Quaternion) # I think normalizing rounding errors will make things worse
 
     # this version to get the angle of the unit quaternion q_hat for arbitrary scaled q, q = s * q_hat
-    theta =  2 * atan2(sqrt(q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3), q.s)
+    theta =  2 * atan2(sqrt(q.x*q.x + q.y*q.y + q.z*q.z), q.w)
 
     #= If we want it to throw a domain error for non-unit quaternions
-    if (abs(q.s) > 1)
+    if (abs(q.w) > 1)
         thresh = 1e-9  # choosen by voodoo
-        if (q.s > 1)
-            theta = (q.s - 1 < thresh) ?  2 * acos(one(q.s)) : 2 * acos(q.s)  # 2nd case will throw
+        if (q.w > 1)
+            theta = (q.w - 1 < thresh) ?  2 * acos(one(q.w)) : 2 * acos(q.w)  # 2nd case will throw
         else
-            theta = (q.s + 1 < thresh) ?  2 * acos(-one(q.s)) : 2 * acos(q.s) # 2nd case will throw
+            theta = (q.w + 1 < thresh) ?  2 * acos(-one(q.w)) : 2 * acos(q.w) # 2nd case will throw
         end
     else
-        theta = 2 * acos(q.s)
+        theta = 2 * acos(q.w)
     end
-    =#
+
 end
 
 @inline rotation_axis(q::Quaternion) = rotation_axis(AngleAxis(q))
@@ -431,4 +758,5 @@ strip_eltype{T <: ProperEulerAngles}(::Type{T}) = ProperEulerAngles{euler_order(
 @inline eye(::Type{ProperEulerAngles}) = ProperEulerAngles(0.0, 0.0, 0.0)
 @inline eye{ORD}(::Type{ProperEulerAngles{ORD}}) = ProperEulerAngles{ORD}(0.0, 0.0, 0.0)
 @inline eye{ORD, T}(::Type{ProperEulerAngles{ORD, T}}) = ProperEulerAngles{ORD, T}(zero(T), zero(T), zero(T))
-
+=#
+=#
