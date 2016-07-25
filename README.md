@@ -124,7 +124,7 @@ Some derivative calculations are include in this package, e.g.
     jac = Rotations.jacobian(SpQuat, q)
     hess = Rotations.hessian(SpQuat, q)
 
-    # 1st and 2nd order for rotating points using Quaternion and SpQuats
+    # 1st and 2nd order for rotating points using Quaternions and SpQuats
     using FixedSizeArrays
     X = randn(Vec{3,Float64})
     jac = Rotations.jacobian(q, X)

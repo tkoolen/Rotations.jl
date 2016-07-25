@@ -101,7 +101,7 @@ end
 @testset "Rotations Tests" begin
 
     # include your own tests here
-    #include("rotation_tests.jl")
+    include("rotation_tests.jl")
     include("derivative_tests.jl")
 
 end

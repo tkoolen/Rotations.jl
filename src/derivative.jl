@@ -21,15 +21,14 @@ ith_partial{N}(X::Mat{9,N}, i) = @fsa([X[1,i]   X[4,i]   X[7,i];
 #######################################################
 
 """
-function to return the derivative of the rotation matrix w.r.t the quaternion elements
 
-Args:
+1) jacobian(::Type{output_param}, R::input_param)
 
-    q            - a 4 element quaternion
+Returns the jacobian for transforming from the input rotation parameterization to the output parameterization, centered at the value of R.
 
-Returns:
+2) jacobian(R::rotation_type, X::Union{Vec, Vector})
 
-    Jac          - a 9 x 4 element Jacobian where the i, j th element specifies the dRidQj
+Returns the jacobian for rotating the vector X by R.
 
 """
 function jacobian{T}(::Type{RotMatrix},  q::Quaternion{T})
@@ -165,6 +164,19 @@ end
 #
 # 2nd derivative of the SpQuat - > Quaternion transformation
 #
+"""
+
+1) hessian(::Type{output_param}, R::input_param)
+
+Returns the 2nd order partial derivatives for transforming from the input rotation parameterization to the output parameterization, centered at the value of R.
+The output is an N vector of DxD matrices, where N and D are the number of parameters in the output and input parameterizations respectively.
+
+2) hessian(R::rotation_type, X::Union{Vec, Vector})
+
+Returns the 2nd order partial derivatives for rotating the vector X by R.
+The output is an 3 vector of DxD matrices, where D is the number of parameters of the rotation parameterization.
+
+"""
 function hessian(::Type{Quaternion},  X::SpQuat)
 
     # make it match q = Quaternion(X) which puts the return in the domain with q.s >= 0
@@ -376,7 +388,8 @@ d_cross{T}(u::Vec{3,T}) = @fsa([ zero(T) -u[3]      u[2];
                                  u[3]     zero(T)  -u[1];
                                 -u[2]     u[1]      zero(T)])
 
-function jacobian(q::Quaternion, X::FixedVector{3})
+# TODO: should this be jacobian(:rotate, q,  X)   # or something?
+function jacobian(q::Quaternion, X::Union{FixedVector{3}, AbstractVector})
 
     s = norm(q)
     T = eltype(s)
@@ -397,7 +410,7 @@ function jacobian(q::Quaternion, X::FixedVector{3})
 
 end
 
-function jacobian{T}(spq::SpQuat{T}, X::FixedVector{3,T})
+function jacobian(spq::SpQuat, X::Union{FixedVector{3}, AbstractVector})
     dQ = jacobian(Quaternion, spq)
     q = Quaternion(spq)
     jac = jacobian(q, X) * dQ
@@ -409,7 +422,7 @@ end
 #
 #######################################################
 
-function hessian(q::Quaternion, X::FixedVector{3})
+function hessian(q::Quaternion, X::Union{FixedVector{3}, AbstractVector})
 
     s = norm(q)
     T = typeof(s)
@@ -479,7 +492,7 @@ function hessian(q::Quaternion, X::FixedVector{3})
         )
 end
 
-function hessian{T}(spq::SpQuat{T}, X::FixedVector{3,T})
+function hessian(spq::SpQuat, X::Union{FixedVector{3}, AbstractVector})
 
     # converting to a Quaternion
     j1 = jacobian(Quaternion, spq)
@@ -492,7 +505,7 @@ function hessian{T}(spq::SpQuat{T}, X::FixedVector{3,T})
     h2 = hessian(q, X)
 
     # build them
-    hess = Vec{3, Mat{3,3,T}}(
+    hess = Vec{3, Mat{3, 3, eltype(j2)}}(
 
         # d2X[1]
         Tuple((j2[1,1] * h1[1] + j2[1,2] * h1[2] + j2[1,3] * h1[3] + j2[1,4] * h1[4]) + j1t * h2[1] * j1),
