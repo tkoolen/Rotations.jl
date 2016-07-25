@@ -1,8 +1,9 @@
 # function to perform tests of the rotation functions in the Rotations module
 using Compat
 using FixedSizeArrays
-using Quaternions
 using Rotations
+using Quaternions
+
 
 ###############################
 # Check fixed relationships
