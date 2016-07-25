@@ -47,7 +47,7 @@ Base.inv(r::RotMatrix) = RotMatrix(r.mat')
 
 # Removes module name from output, to match other types
 function Base.summary(r::RotMatrix)
-    "3×3 RotMatrix{$(eltype(r))})"
+    "3×3 RotMatrix{$(eltype(r))}"
 end
 
 ################################################################################
@@ -86,11 +86,11 @@ end
 @inline (::Type{Quat}){W,X,Y,Z}(w::W, x::X, y::Y, z::Z) = Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-function (::Type{RQ}){RQ<:Quat}(t::NTuple{9})
-    q = Quat(sqrt(abs(1  + t[1] + t[5] + t[9])) / 2,
-                copysign(sqrt(abs(1 + t[1] - t[5] - t[9]))/2, t[6] - t[8]),
-                copysign(sqrt(abs(1 - t[1] + t[5] - t[9]))/2, t[7] - t[3]),
-                copysign(sqrt(abs(1 - t[1] - t[5] + t[9]))/2, t[2] - t[4]))
+function (::Type{Q}){Q<:Quat}(t::NTuple{9})
+    q = Q(sqrt(abs(1  + t[1] + t[5] + t[9])) / 2,
+               copysign(sqrt(abs(1 + t[1] - t[5] - t[9]))/2, t[6] - t[8]),
+               copysign(sqrt(abs(1 - t[1] + t[5] - t[9]))/2, t[7] - t[3]),
+               copysign(sqrt(abs(1 - t[1] - t[5] + t[9]))/2, t[2] - t[4]))
 end
 
 function Base.getindex(q::Quat, i::Integer)
@@ -175,19 +175,21 @@ function Base.convert(::Type{Tuple}, q::Quat)
             ww - xx - yy + zz)
 end
 
-function Base.:*(q::Quat, x::AbstractVector)
-    if length(X) != 3
-        throw("Dimension mismatch: cannot rotate a vector of length $(length(X))")
+function Base.:*(q::Quat, v::StaticVector)
+    if length(v) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    qo = (-q.x * X[1] - q.y * X[2] - q.z * X[3],
-           q.w * X[1] + q.y * X[3] - q.z * X[2],
-           q.w * X[2] - q.x * X[3] + q.z * X[1],
-           q.w * X[3] + q.x * X[2] - q.y * X[1])
+    qo = (-q.x * v[1] - q.y * v[2] - q.z * v[3],
+           q.w * v[1] + q.y * v[3] - q.z * v[2],
+           q.w * v[2] - q.x * v[3] + q.z * v[1],
+           q.w * v[3] + q.x * v[2] - q.y * v[1])
 
-    Xo = SVector(-qo[1] * q.x + qo[2] * q.w - qo[3] * q.z + qo[4] * q.y,
-                 -qo[1] * q.y + qo[2] * q.z + qo[3] * q.w - qo[4] * q.x,
-                 -qo[1] * q.z - qo[2] * q.y + qo[3] * q.x + qo[4] * q.w)
+    T = promote_type(eltype(q), eltype(v))
+
+    return similar_type(v, T)(-qo[1] * q.x + qo[2] * q.w - qo[3] * q.z + qo[4] * q.y,
+                              -qo[1] * q.y + qo[2] * q.z + qo[3] * q.w - qo[4] * q.x,
+                              -qo[1] * q.z - qo[2] * q.y + qo[3] * q.x + qo[4] * q.w)
 end
 
 # TODO consider Ac_mul_B, etc...
@@ -237,7 +239,7 @@ end
     immutable SPQuat{T} <: Rotation{T}
     SPQuat(x, y, z)
 
-A SPQuat is a 3D rotation represented by the "stereographic projection" of a normalized quaternion (shortened to "SPQuat"), which is
+An `SPQuat` is a 3D rotation matrix represented by the "stereographic projection" of a normalized quaternion (shortened to "SPQuat"), which is
 a 3-element parametrization of a unit quaternion Q formed by the intersection of a line from [-1,0,0,0] to Q, with a plane containing the origin and with normal direction [1,0,0,0]. This
 is a compact representation of rotations where the derivitives of the rotation matrix's elements w.r.t. the SPQuat parameters are rational functions (making them useful for optimization).
 
@@ -286,7 +288,7 @@ end
 
 @inline Base.:*(spq::SPQuat, r::Rotation) = Quat(spq) * r
 @inline Base.:*(r::Rotation, spq::SPQuat) = r * Quat(spq)
-@inline Base.:*(spq1::SPQuat, spq2::SPQuat) = SPQuat(Quat(spq1) * Quat(spq2))
+@inline Base.:*(spq1::SPQuat, spq2::SPQuat) = Quat(spq1) * Quat(spq2)
 
 @inline Base.inv(spq::SPQuat) = SPQuat(-spq.x, -spq.y, -spq.z)
 
@@ -322,9 +324,380 @@ end
 =#
 
 
+################################################################################
+################################################################################
+"""
+    immutable AngleAxis{T} <: Rotation{T}
+    AngleAxis(Θ, x, y, z)
+
+A 3×3 rotation matrix parameterized by a 3D rotation by angle θ about an
+arbitrary axis `[x, y, z]`.
+
+Note that the axis is not unique for θ = 0, and that this parameterization does
+not continuously map the neighbourhood of the null rotation (and therefore
+might not be suitable for autodifferentation and optimization purposes).
+"""
+immutable AngleAxis{T} <: Rotation{T}
+    theta::T
+    axis_x::T
+    axis_y::T
+    axis_z::T
+
+    # Ensure axis is normalized
+    function AngleAxis(θ, x, y, z)
+        norm = sqrt(x*x + y*y + z*z)
+        # Not sure what to do with theta?? Should it become theta * norm ?
+        new(θ, x/norm, y/norm, z/norm)
+    end
+end
+
+# StaticArrays will take over *all* the constructors and put everything in a tuple...
+# but this isn't quite what we mean when we have 4 inputs (not 9).
+@inline (::Type{AngleAxis}){Θ,X,Y,Z}(θ::Θ, x::X, y::Y, z::Z) = AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z)
+
+# These 2 functions are enough to satisfy the entire StaticArrays interface:
+@inline (::Type{AngleAxis})(t::NTuple{9}) = AngleAxis(Quat(t))
+@inline Base.getindex(aa::AngleAxis, i::Integer) = Quat(aa)[i]
+
+@inline function Base.convert{Q <: Quat}(::Type{Q}, aa::AngleAxis)
+    qtheta = cos(aa.theta / 2)
+    s = sin(aa.theta / 2) / sqrt(aa.axis_x * aa.axis_x + aa.axis_y * aa.axis_y + aa.axis_z * aa.axis_z)
+    return Q(qtheta, s * aa.axis_x, s * aa.axis_y, s * aa.axis_z)
+end
+
+@inline function Base.convert{AA <: AngleAxis}(::Type{AA}, q::Quat)
+    # TODO: consider how to deal with derivative near theta = 0
+    s = sqrt(q.x*q.x + q.y*q.y + q.z*q.z)
+    theta =  2 * atan2(s, q.w)
+    return s > 0 ? AA(theta, q.x / s, q.y / s, q.z / s) : AA(theta, one(theta), zero(theta), zero(theta))
+end
+
+@inline Base.convert(::Type{Tuple}, aa::AngleAxis) = Tuple(Quat(aa))
+
+# Using Rodrigues formula on an AngleAxis parameterization (assume unit axis length) to do the rotation
+# (implementation from: https://ceres-solver.googlesource.com/ceres-solver/+/1.10.0/include/ceres/rotation.h)
+function Base.:*(aa::AngleAxis, v::StaticVector)
+    if length(v) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
+    end
+
+    w = rotation_axis(aa)
+    ct, st = cos(aa.theta), sin(aa.theta)
+    w_cross_pt = cross(w, v)
+    m = dot(v, w) * (one(w_cross_pt[1]) - ct)
+    T = promote_type(eltype(aa), eltype(v))
+    return similar_type(v,T)(v[1] * ct + w_cross_pt[1] * st + w[1] * m,
+                             v[2] * ct + w_cross_pt[2] * st + w[2] * m,
+                             v[3] * ct + w_cross_pt[3] * st + w[3] * m)
+end
+
+@inline Base.:*(aa::AngleAxis, r::Rotation) = Quat(aa) * r
+@inline Base.:*(r::Rotation, aa::AngleAxis) = r * Quat(aa)
+@inline Base.:*(aa1::AngleAxis, aa2::AngleAxis) = Quat(aa1) * Quat(aa2)
+
+@inline inv(aa::AngleAxis) = AngleAxis(-aa.theta, aa.axis_x, aa.axis_y, aa.axis_z)
+
+# define null rotations for convenience
+@inline eye(::Type{AngleAxis}) = AngleAxis(0.0, 1.0, 0.0, 0.0)
+@inline eye{T}(::Type{AngleAxis{T}}) = AngleAxis{T}(zero(T), one(T), zero(T), zero(T))
+
+# accessors
+@inline rotation_angle(aa::AngleAxis) = aa.theta #  - floor((aa.theta+pi) / (2*pi)) * 2*pi
+@inline rotation_axis(aa::AngleAxis) = SVector(aa.axis_x, aa.axis_y, aa.axis_z)
+
+# Need SPQuat parameters in the output representation
+function Base.summary(aa::AngleAxis)
+    "3×3 AngleAxis{$(eltype(aa))}($(aa.theta) rad, [$(aa.axis_x), $(aa.axis_y), $(aa.axis_z)])"
+end
+
+
+################################################################################
+################################################################################
+"""
+    immutable RodriguesVec{T} <: Rotation{T}
+    RodriguesVec(sx, sy, sz)
+
+Rodrigues vector parameterization of a 3×3 rotation matrix. The direction of the
+vector [sx, sy, sz] defines the axis of rotation, and the rotation angle is
+given by its norm.
+"""
+immutable RodriguesVec{T} <: Rotation{T}
+    sx::T
+    sy::T
+    sz::T
+end
+
+# StaticArrays will take over *all* the constructors and put everything in a tuple...
+# but this isn't quite what we mean when we have 4 inputs (not 9).
+@inline (::Type{RodriguesVec}){X,Y,Z}(x::X, y::Y, z::Z) = RodriguesVec{promote_type(promote_type(X, Y), Z)}(x, y, z)
+
+# These 2 functions are enough to satisfy the entire StaticArrays interface:
+@inline (::Type{RodriguesVec})(t::NTuple{9}) = RodriguesVec(Quat(t))
+@inline Base.getindex(aa::RodriguesVec, i::Integer) = Quat(aa)[i]
+
+# define its interaction with other angle representations
+
+function Base.convert{AA <: AngleAxis}(::Type{AA}, rv::RodriguesVec)
+    # TODO: consider how to deal with derivative near theta = 0. There should be a first-order expansion here.
+    theta = rotation_angle(rv)
+    return theta > 0 ? AA(theta, rv.sx / theta, rv.sy / theta, rv.sz / theta) : AA(zero(theta), one(theta), zero(theta), zero(theta))
+end
+
+function Base.convert{RV <: RodriguesVec}(::Type{RV}, aa::AngleAxis)
+    return RV(aa.theta * aa.axis_x, aa.theta * aa.axis_y, aa.theta * aa.axis_z)
+end
+
+function Base.convert{Q <: Quat}(::Type{Q}, rv::RodriguesVec)
+    theta = rotation_angle(rv)
+    qtheta = cos(theta / 2)
+    #s = abs(1/2 * sinc((theta / 2) / pi))
+    s = (1/2 * sinc((theta / 2) / pi)) # TODO check this (I removed an abs)
+    return Q(qtheta, s * rv.sx, s * rv.sy, s * rv.sz)
+end
+
+function Base.convert{RV <: RodriguesVec}(::Type{RV}, q::Quat)
+    s2 = q.x*q.x + q.y*q.y + q.z*q.z
+    if (s2 > 0)
+        cos_t2 = sqrt(s2)
+        theta = 2 * atan2(cos_t2, q.w)
+        sc = theta / cos_t2
+    else
+        sc = 2                 # N.B. the 2 "should" match the derivitive as cos_t2 -> 0
+    end
+    return RV(sc * q.x, sc * q.y, sc * q.z )
+end
+
+@inline Base.convert(::Type{Tuple}, rv::RodriguesVec) = Tuple(Quat(rv))
+
+function Base.:*{T1,T2}(rv::RodriguesVec{T1}, v::StaticVector{T2})
+    if length(v) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
+    end
+
+    theta = rotation_angle(rv)
+    if (theta > eps(T1)) # use eps here because we have the 1st order series expansion defined
+        return AngleAxis(rv) * v
+    else
+        return similar_type(typeof(v), promote_type(T1,T2))(
+                    v[1] + rv[2] * v[3] - rv[3] * v[2],
+                    v[2] + rv[3] * v[1] - rv[1] * v[3],
+                    v[3] + rv[1] * v[2] - rv[2] * v[1])
+    end
+end
+
+@inline Base.:*(rv::RodriguesVec, r::Rotation) = Quat(rv) * r
+@inline Base.:*(r::Rotation, rv::RodriguesVec) = r * Quat(rv)
+@inline Base.:*(rv1::RodriguesVec, rv2::RodriguesVec) = Quat(rv1) * Quat(rv2)
+
+@inline inv(rv::RodriguesVec) = RodriguesVec(-rv.sx, -rv.sy, -rv.sz)
+
+# rotation properties
+@inline rotation_angle(rv::RodriguesVec) = sqrt(rv.sx * rv.sx + rv.sy * rv.sy + rv.sz * rv.sz)
+function rotation_axis(rv::RodriguesVec)     # what should this return for theta = 0?
+    theta = rotation_angle(rv)
+    return (theta > 0 ? SVector(rv.sx / theta, rv.sy / theta, rv.sz / theta) : SVector(one(theta), zero(theta), zero(theta)))
+end
+
+# define null rotations for convenience
+@inline eye(::Type{RodriguesVec}) = RodriguesVec(0.0, 0.0, 0.0)
+@inline eye{T}(::Type{RodriguesVec{T}}) = RodriguesVec{T}(zero(T), zero(T), zero(T))
+
+# Need a good output representation
+function Base.summary(rv::RodriguesVec)
+    "3×3 RodriguesVec{$(eltype(rv))}($(rv.sx), $(rv.sy), $(rv.sz))"
+end
+
+################################################################################
+################################################################################
+
+# Single axis rotations:
+
+"""
+    immutable RotX{T} <: Rotation{T}
+    RotX(theta)
+
+A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
+"""
+immutable RotX{T} <: Rotation{T}
+    theta::T
+end
+
+# These 2 functions are enough to satisfy the entire StaticArrays interface:
+@inline (::Type{RotX})(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
+@inline function Base.getindex{T}(r::RotX{T}, i::Integer)
+    if i == 1
+        one(T)
+    elseif i < 5
+        zero(T)
+    elseif i == 5
+        cos(r.theta)
+    elseif i == 6
+        sin(r.theta)
+    elseif i == 7
+        zero(T)
+    elseif i == 8
+        -sin(r.theta)
+    elseif i == 9
+        cos(r.theta)
+    else
+        throw(BoundsError(r,i))
+    end
+end
+
+@inline function Base.convert{T}(::Type{Tuple}, r::RotX{T})
+    (one(T),  zero(T),      zero(T),   # transposed representation
+     zero(T), cos(r.theta), sin(r.theta),
+     zero(T), -sin(r.theta), cos(r.theta))
+end
+
+@inline function Base.:*(r::RotX, v::StaticVector)
+    if length(v) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
+    end
+
+    ct, st = cos(r.theta), sin(r.theta)
+    T = promote_type(eltype(r), eltype(v))
+    return similar_type(v,T)(v[1],
+                             v[2] * ct - v[3] * st,
+                             v[3] * ct + v[2] * st)
+end
+
+@inline Base.:*(r1::RotX, r2::RotX) = RotX(r1.theta + r2.theta)
+
+@inline inv(r::RotX) = RotX(-r.theta)
+
+# Need a good output representation
+function Base.summary(r::RotX)
+    "3×3 RotX{$(eltype(r))}($(r.theta))"
+end
+
+"""
+    immutable RotY{T} <: Rotation{T}
+    RotY(theta)
+
+A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
+"""
+immutable RotY{T} <: Rotation{T}
+    theta::T
+end
+
+@inline function Base.getindex{T}(r::RotY{T}, i::Integer)
+    if i == 1
+        cos(r.theta)
+    elseif i == 2
+        zero(T)
+    elseif i == 3
+        -sin(r.theta)
+    elseif i == 4
+        zero(T)
+    elseif i == 5
+        one(T)
+    elseif i == 6
+        zero(T)
+    elseif i == 7
+        sin(r.theta)
+    elseif i == 8
+        zero(T)
+    elseif i == 9
+        cos(r.theta)
+    else
+        throw(BoundsError(r,i))
+    end
+end
+
+@inline function Base.convert{T}(::Type{Tuple}, r::RotY{T})
+    (cos(r.theta), zero(T), -sin(r.theta),   # transposed representation
+     zero(T),      one(T),   zero(T),
+     sin(r.theta), zero(T),  cos(r.theta))
+end
+
+@inline function Base.:*(r::RotY, v::StaticVector)
+    if length(v) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
+    end
+
+    ct, st = cos(r.theta), sin(r.theta)
+    T = promote_type(eltype(r), eltype(v))
+    return similar_type(v,T)(v[1] * ct + v[3] * st,
+                             v[2],
+                             v[3] * ct - v[1] * st)
+end
+
+@inline Base.:*(r1::RotY, r2::RotY) = RotY(r1.theta + r2.theta)
+
+@inline inv(r::RotY) = RotY(-r.theta)
+
+# Need a good output representation
+function Base.summary(r::RotY)
+    "3×3 RotY{$(eltype(r))}($(r.theta))"
+end
+
+"""
+    immutable RotZ{T} <: Rotation{T}
+    RotZ(theta)
+
+
+A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
+"""
+immutable RotZ{T} <: Rotation{T}
+    theta::T
+end
+
+@inline function Base.getindex{T}(r::RotZ{T}, i::Integer)
+    if i == 1
+        cos(r.theta)
+    elseif i == 2
+        sin(r.theta)
+    elseif i == 3
+        zero(T)
+    elseif i == 4
+        -sin(r.theta)
+    elseif i == 5
+        cos(r.theta)
+    elseif i < 9
+        zero(T)
+    elseif i == 9
+        one(T)
+    else
+        throw(BoundsError(r,i))
+    end
+end
+
+@inline function Base.convert{T}(::Type{Tuple}, r::RotX{T})
+    ( cos(r.theta), sin(r.theta), zero(T),   # transposed representation
+     -sin(r.theta), cos(r.theta), zero(T),
+      zero(T),      zero(T),      one(T))
+end
+
+@inline function Base.:*(r::RotZ, v::StaticVector)
+    if length(v) != 3
+        throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
+    end
+
+    ct, st = cos(r.theta), sin(r.theta)
+    T = promote_type(eltype(r), eltype(v))
+    return similar_type(v,T)(v[1] * ct - v[2] * st,
+                             v[2] * ct + v[1] * st,
+                             v[3])
+end
+
+@inline Base.:*(r1::RotZ, r2::RotZ) = RotZ(r1.theta + r2.theta)
+
+@inline inv(r::RotZ) = RotZ(-r.theta)
+
+# Need a good output representation
+function Base.summary(r::RotZ)
+    "3×3 RotZ{$(eltype(r))}($(r.theta))"
+end
+
+###################################################
+# Euler Angles
+###################################################
 
 
 
+################################################################################
+################################################################################
 
 
 

@@ -26,7 +26,11 @@ export
     RotMatrix,
     Quat,
     SPQuat,
+    AngleAxis,
     RodriguesVec,
+    RotX,
+    RotY,
+    RotZ,
     EulerAngles,         # order is in the type specification
     ProperEulerAngles,   # order is in the type specification
 
