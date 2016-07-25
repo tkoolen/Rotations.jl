@@ -275,10 +275,9 @@ push!(RotTypeList, RodriguesVec)
 @inline convert(::Type{RodriguesVec}, aa::AngleAxis) = angleaxis_to_rodrigues(aa)
 @inline convert{T}(::Type{RodriguesVec{T}}, aa::AngleAxis) = convert(RodriguesVec{T}, angleaxis_to_rodrigues(aa))
 
-# get here from a rotation matrix
 @inline inv(rv::RodriguesVec) = RodriguesVec(-rv.sx, -rv.sy, -rv.sz)
 
-# go from an RodriguesVec to any other representation via Quaternions
+# go from a RodriguesVec to any other representation via Quaternions
 conversion_path[RodriguesVec] = Quaternion
 append!(defined_conversions, [(Quaternion, RodriguesVec), (RodriguesVec, Quaternion)])
 append!(defined_conversions, [(AngleAxis, RodriguesVec), (RodriguesVec, AngleAxis)])

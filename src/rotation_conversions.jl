@@ -269,7 +269,7 @@ function to convert a rodrigues vector to a quaternion
 function rodrigues_to_quat{T}(rv::RodriguesVec{T})
     theta = norm(rv)
     qtheta = cos(theta / 2)
-    s = abs(1/2 * sinc((theta / 2) / pi)) # Rework - autodiff can't handle sinc
+    s = 1/2 * sinc((theta / 2) / pi) # Rework - autodiff can't handle sinc
     return Quaternion(qtheta, s * rv.sx, s * rv.sy, s * rv.sz)
 end
 

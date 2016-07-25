@@ -4,6 +4,7 @@ __precompile__(true)
 module Rotations
 
 import Quaternions  # TODO: Switch to the UnitQuaternions package? https://github.com/kam3k/UnitQuaternions.jl
+using Quaternions
 using Compat
 using FixedSizeArrays
 
