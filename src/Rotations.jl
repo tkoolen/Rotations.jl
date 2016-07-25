@@ -31,8 +31,9 @@ export
     RotX,
     RotY,
     RotZ,
-    EulerAngles,         # order is in the type specification
-    ProperEulerAngles,   # order is in the type specification
+    RotXY, RotYX, RotZX, RotXZ, RotYZ, RotZY,
+    RotXYX, RotYXY, RotZXZ, RotXZX, RotYZY, RotZYZ,
+    RotXYZ, RotYXZ, RotZXY, RotXZY, RotYZX, RotZYX,
 
     # retrieve the euler order
     euler_order,
