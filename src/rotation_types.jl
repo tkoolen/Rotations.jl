@@ -89,25 +89,7 @@ numel(::Type{Quaternion}) = 4
 @inline getindex(X::Quaternion, i::Integer) = getfield(X, i)
 
 # angle and axis functions
-@inline function rotation_angle(q::Quaternion) # I think normalizing rounding errors will make things worse
-
-    # this version to get the angle of the unit quaternion q_hat for arbitrary scaled q, q = s * q_hat
-    theta =  2 * atan2(sqrt(q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3), q.s)
-
-    #= If we want it to throw a domain error for non-unit quaternions
-    if (abs(q.s) > 1)
-        thresh = 1e-9  # choosen by voodoo
-        if (q.s > 1)
-            theta = (q.s - 1 < thresh) ?  2 * acos(one(q.s)) : 2 * acos(q.s)  # 2nd case will throw
-        else
-            theta = (q.s + 1 < thresh) ?  2 * acos(-one(q.s)) : 2 * acos(q.s) # 2nd case will throw
-        end
-    else
-        theta = 2 * acos(q.s)
-    end
-    =#
-end
-
+@inline rotation_angle(q::Quaternion) =  2 * atan2(sqrt(q.v1*q.v1 + q.v2*q.v2 + q.v3*q.v3), q.s)
 @inline rotation_axis(q::Quaternion) = rotation_axis(AngleAxis(q))
 
 strip_eltype{T <: Quaternion}(::Type{T}) = Quaternion

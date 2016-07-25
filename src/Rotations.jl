@@ -16,8 +16,8 @@ include("euler_conversions.jl")
 include("type_methods.jl")
 include("rotate.jl")
 include("quaternion_funcs.jl")
-include("spquat_funcs.jl")
 include("math_funcs.jl")
+include("derivative.jl")
 
 export
 
