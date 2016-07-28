@@ -18,8 +18,11 @@ immutable RotX{T} <: Rotation{T}
     theta::T
 end
 
+@inline convert{R<:RotX}(::Type{R}, r::RotX) = R(r.theta)
+
+
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotX})(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
+@inline (::Type{R}){R<:RotX}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotX{T}, i::Integer)
     if i == 1
         one(T)
@@ -81,7 +84,9 @@ immutable RotY{T} <: Rotation{T}
     theta::T
 end
 
-@inline (::Type{RotY})(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
+@inline convert{R<:RotY}(::Type{R}, r::RotY) = R(r.theta)
+
+@inline (::Type{R}){R<:RotY}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotY{T}, i::Integer)
     if i == 1
         cos(r.theta)
@@ -148,7 +153,9 @@ immutable RotZ{T} <: Rotation{T}
     theta::T
 end
 
-@inline (::Type{RotZ})(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
+@inline convert{R<:RotZ}(::Type{R}, r::RotZ) = R(r.theta)
+
+@inline (::Type{R}){R<:RotZ}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZ{T}, i::Integer)
     if i == 1
         cos(r.theta)
@@ -200,6 +207,16 @@ function Base.summary(r::RotZ)
     "3×3 RotZ{$(eltype(r))}($(r.theta))"
 end
 
+function Base.rand{R <: Union{RotX,RotY,RotZ}}(::Type{R})
+    T = eltype(R)
+    if T == Any
+        T = Float64
+    end
+
+    return R(2*pi*rand(T))
+end
+
+
 ################################################################################
 ################################################################################
 
@@ -219,12 +236,15 @@ immutable RotXY{T} <: Rotation{T}
     theta2::T
 end
 
+@inline (::Type{R}){R<:RotXY}(r::RotXY) = R(r.theta1, r.theta2)
+@inline convert{R<:RotXY}(::Type{R}, r::RotXY) = R(r.theta1, r.theta2)
+
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 2 inputs (not 9).
 @inline (::Type{RotXY}){X,Y}(x::X, y::Y) = RotXY{promote_type(X, Y)}(x, y)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotXY})(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+@inline (::Type{R}){R<:RotXY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotXY{T}, i::Integer)
     Tuple(r)[i] # Slow...
 end
@@ -286,12 +306,15 @@ immutable RotYX{T} <: Rotation{T}
     theta2::T
 end
 
+@inline (::Type{R}){R<:RotYX}(r::RotYX) = R(r.theta1, r.theta2)
+@inline convert{R<:RotYX}(::Type{R}, r::RotYX) = R(r.theta1, r.theta2)
+
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 2 inputs (not 9).
 @inline (::Type{RotYX}){Y,X}(y::Y, x::X) = RotYX{promote_type(Y, X)}(y, x)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotYX})(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+@inline (::Type{R}){R<:RotYX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotYX{T}, i::Integer)
     Tuple(r)[i] # Slow...
 end
@@ -353,12 +376,15 @@ immutable RotXZ{T} <: Rotation{T}
     theta2::T
 end
 
+@inline (::Type{R}){R<:RotXZ}(r::RotXZ) = R(r.theta1, r.theta2)
+@inline convert{R<:RotXZ}(::Type{R}, r::RotXZ) = R(r.theta1, r.theta2)
+
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 2 inputs (not 9).
 @inline (::Type{RotXZ}){X,Z}(x::X, z::Z) = RotXZ{promote_type(X, Z)}(x, z)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotXZ})(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+@inline (::Type{R}){R<:RotXZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotXZ{T}, i::Integer)
     Tuple(r)[i] # Slow...
 end
@@ -420,12 +446,15 @@ immutable RotZX{T} <: Rotation{T}
     theta2::T
 end
 
+@inline (::Type{R}){R<:RotZX}(r::RotZX) = R(r.theta1, r.theta2)
+@inline convert{R<:RotZX}(::Type{R}, r::RotZX) = R(r.theta1, r.theta2)
+
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 2 inputs (not 9).
 @inline (::Type{RotZX}){Z,X}(z::Z, x::X) = RotZX{promote_type(Z, X)}(z, x)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotZX})(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+@inline (::Type{R}){R<:RotZX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZX{T}, i::Integer)
     Tuple(r)[i] # Slow...
 end
@@ -437,9 +466,9 @@ end
     cosθ₂ = cos(r.theta2)
 
     # transposed representation
-    (cosθ₂,   cosθ₁*sinθ₂,  sinθ₁*sinθ₂,
-     -sinθ₂,  cosθ₁*cosθ₂,  sinθ₁*cosθ₂,
-     zero(T),       -sinθ₁,       cosθ₁)
+    ( cosθ₁,         sinθ₁,         zero(T),
+     -sinθ₁*cosθ₂,   cosθ₁*cosθ₂,   sinθ₂,
+      sinθ₁*sinθ₂,   cosθ₁*-sinθ₂,  cosθ₂)
 end
 
 @inline function Base.:*(r::RotZX, v::StaticVector)
@@ -454,9 +483,9 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
-    return similar_type(v,T)(cosθ₂*v[1] + -sinθ₂*v[2],
-                             cosθ₁*sinθ₂*v[1] + cosθ₁*cosθ₂*v[2] + -sinθ₁*v[3],
-                             sinθ₁*sinθ₂*v[1] + sinθ₁*cosθ₂*v[2] + cosθ₁*v[3])
+    return similar_type(v,T)(cosθ₁*v[1] + -sinθ₁*cosθ₂*v[2] + sinθ₁*sinθ₂*v[3],
+                             sinθ₁*v[1] + cosθ₁*cosθ₂*v[2] + cosθ₁*-sinθ₂*v[3],
+                             sinθ₂*v[2] + cosθ₂*v[3])
 end
 
 @inline Base.:*(r1::RotZ, r2::RotX) = RotZX(r1.theta, r2.theta)
@@ -487,12 +516,15 @@ immutable RotZY{T} <: Rotation{T}
     theta2::T
 end
 
+@inline (::Type{R}){R<:RotZY}(r::RotZY) = R(r.theta1, r.theta2)
+@inline convert{R<:RotZY}(::Type{R}, r::RotZY) = R(r.theta1, r.theta2)
+
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 2 inputs (not 9).
 @inline (::Type{RotZY}){Z,Y}(z::Z, y::Y) = RotZY{promote_type(Z, Y)}(z, y)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotZY})(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+@inline (::Type{R}){R<:RotZY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZY{T}, i::Integer)
     Tuple(r)[i] # Slow...
 end
@@ -554,12 +586,15 @@ immutable RotYZ{T} <: Rotation{T}
     theta2::T
 end
 
+@inline (::Type{R}){R<:RotYZ}(r::RotYZ) = R(r.theta1, r.theta2)
+@inline convert{R<:RotYZ}(::Type{R}, r::RotYZ) = R(r.theta1, r.theta2)
+
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 2 inputs (not 9).
 @inline (::Type{RotYZ}){Y,Z}(y::Y, z::Z) = RotYZ{promote_type(Y, Z)}(y, z)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RotYZ})(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+@inline (::Type{R}){R<:RotYZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotYZ{T}, i::Integer)
     Tuple(r)[i] # Slow...
 end
@@ -607,6 +642,20 @@ end
 function Base.summary(r::RotYZ)
     "3×3 RotYZ{$(eltype(r))}($(r.theta1), $(r.theta2))"
 end
+
+
+function Base.rand{R <: Union{RotXY,RotYZ,RotZX, RotXZ, RotYX, RotZY}}(::Type{R})
+    T = eltype(R)
+    if T == Any
+        T = Float64
+    end
+
+    # Not really sure what this distribution is, but it's also not clear what
+    # it should be! rand(RotXY) *is* invariant to pre-rotations by a RotX and
+    # post-rotations by a RotY...
+    return R(2*pi*rand(T), 2*pi*rand(T))
+end
+
 
 ################################################################################
 ################################################################################

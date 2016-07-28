@@ -58,7 +58,7 @@ Base.inv(r::RotMatrix) = RotMatrix(r.mat')
 
 # By default, composition of rotations will go through RotMatrix, unless overridden
 @inline *(r1::Rotation, r2::Rotation) = RotMatrix(r1) * RotMatrix(r2)
-@inline *(r1::RotMatrix, r2::Rotation) =r1 * RotMatrix(r2)
+@inline *(r1::RotMatrix, r2::Rotation) = r1 * RotMatrix(r2)
 @inline *(r1::Rotation, r2::RotMatrix) = RotMatrix(r1) * r2
 @inline *(r1::RotMatrix, r2::RotMatrix) = RotMatrix(r1.mat * r2.mat) # TODO check that this doesn't involve extra copying.
 

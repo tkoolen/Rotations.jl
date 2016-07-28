@@ -30,7 +30,7 @@ end
 @inline (::Type{AngleAxis}){Θ,X,Y,Z}(θ::Θ, x::X, y::Y, z::Z) = AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{AngleAxis})(t::NTuple{9}) = AngleAxis(Quat(t))
+@inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))
 @inline Base.getindex(aa::AngleAxis, i::Integer) = Quat(aa)[i]
 
 @inline function Base.convert{Q <: Quat}(::Type{Q}, aa::AngleAxis)
@@ -66,7 +66,11 @@ function Base.:*(aa::AngleAxis, v::StaticVector)
 end
 
 @inline Base.:*(aa::AngleAxis, r::Rotation) = Quat(aa) * r
+@inline Base.:*(aa::AngleAxis, r::RotMatrix) = Quat(aa) * r
+@inline Base.:*(aa::AngleAxis, r::SPQuat) = Quat(aa) * r
 @inline Base.:*(r::Rotation, aa::AngleAxis) = r * Quat(aa)
+@inline Base.:*(r::RotMatrix, aa::AngleAxis) = r * Quat(aa)
+@inline Base.:*(r::SPQuat, aa::AngleAxis) = r * Quat(aa)
 @inline Base.:*(aa1::AngleAxis, aa2::AngleAxis) = Quat(aa1) * Quat(aa2)
 
 @inline inv(aa::AngleAxis) = AngleAxis(-aa.theta, aa.axis_x, aa.axis_y, aa.axis_z)
@@ -106,7 +110,7 @@ end
 @inline (::Type{RodriguesVec}){X,Y,Z}(x::X, y::Y, z::Z) = RodriguesVec{promote_type(promote_type(X, Y), Z)}(x, y, z)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RodriguesVec})(t::NTuple{9}) = RodriguesVec(Quat(t))
+@inline (::Type{RV}){RV <: RodriguesVec}(t::NTuple{9}) = RV(Quat(t))
 @inline Base.getindex(aa::RodriguesVec, i::Integer) = Quat(aa)[i]
 
 # define its interaction with other angle representations
@@ -160,7 +164,13 @@ function Base.:*{T1,T2}(rv::RodriguesVec{T1}, v::StaticVector{T2})
 end
 
 @inline Base.:*(rv::RodriguesVec, r::Rotation) = Quat(rv) * r
+@inline Base.:*(rv::RodriguesVec, r::RotMatrix) = Quat(rv) * r
+@inline Base.:*(rv::RodriguesVec, r::SPQuat) = Quat(rv) * r
+@inline Base.:*(rv::RodriguesVec, r::AngleAxis) = Quat(rv) * r
 @inline Base.:*(r::Rotation, rv::RodriguesVec) = r * Quat(rv)
+@inline Base.:*(r::RotMatrix, rv::RodriguesVec) = r * Quat(rv)
+@inline Base.:*(r::SPQuat, rv::RodriguesVec) = r * Quat(rv)
+@inline Base.:*(r::AngleAxis, rv::RodriguesVec) = r * Quat(rv)
 @inline Base.:*(rv1::RodriguesVec, rv2::RodriguesVec) = Quat(rv1) * Quat(rv2)
 
 @inline inv(rv::RodriguesVec) = RodriguesVec(-rv.sx, -rv.sy, -rv.sz)

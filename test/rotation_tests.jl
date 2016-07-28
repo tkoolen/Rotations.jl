@@ -1,10 +1,8 @@
 # function to perform tests of the rotation functions in the Rotations module
-using Compat
-using FixedSizeArrays
-using Quaternions
+using StaticArrays
 using Rotations
 
-
+#=
 ########################
 # Define helper methods
 ########################
@@ -63,33 +61,24 @@ macro contents_approx_eq_notype(a, b)
         end
     end
 end
-
+=#
 
 #####################################################################################
 # build a full list of rotation types including the different angle ordering schemas
 #####################################################################################
 
-rot_types = Vector{Any}(0)
-ordered_type = Vector{Bool}(0)
-for rT in Rotations.RotTypeList
-    if (length(rT.parameters) == 2)
+rot_types = (RotMatrix, Quat, SPQuat, AngleAxis, RodriguesVec,
+             RotXYZ, RotYZX, RotZXY, RotXZY, RotYXZ, RotZYX,
+             RotXYX, RotYZY, RotZXZ, RotXZX, RotYXY, RotZYZ)
 
-        # get the super type for the order parameter
-        @compat order_type = supertype(Rotations.euler_order(rT))
-        for order in subtypes(order_type)
-            push!(rot_types, rT{order})
-            push!(ordered_type, false)
-        end
-    end
-
-    # ordered ones should have defaults so leave them in
-    push!(rot_types, rT)
-    push!(ordered_type, (length(rT.parameters) == 2))
-end
-
-
-
-
+one_types = (RotX, RotY, RotZ)
+two_types = (RotXY, RotYZ, RotZX, RotXZ, RotYX, RotZY)
+taitbyran_types = (RotXYZ, RotYZX, RotZXY, RotXZY, RotYXZ, RotZYX)
+all_types = (RotMatrix, Quat, SPQuat, AngleAxis, RodriguesVec,
+             RotXYZ, RotYZX, RotZXY, RotXZY, RotYXZ, RotZYX,
+             RotXYX, RotYZY, RotZXZ, RotXZX, RotYXY, RotZYZ,
+             RotX, RotY, RotZ,
+             RotXY, RotYZ, RotZX, RotXZ, RotYX, RotZY)
 
 ###############################
 # Start testing
@@ -101,93 +90,79 @@ end
     # Check fixed relationships
     ###############################
 
-    # Do no rotation
     @testset "Identity rotation checks" begin
-        I = eye(RotMatrix{Float64})
-        @testset "$(rT)" for rT in rot_types
-            rot_var = rT(I)
-            null_var = eye(rT)
-            @types_approx_eq(rot_var, null_var)
+        I = eye(SMatrix{3,3,Float64})
+        I32 = eye(SMatrix{3,3,Float32})
+        @testset "$(R)" for R in all_types
+            @test eye(R)::R == I
+            @test eye(R{Float32})::R{Float32} == I32
         end
     end
-
-    # Constructor tests
-    @testset "Testing constructors" begin
-        @testset "Testing integer construction (should convert to Float64)" begin
-            @testset "$(rT)" for rT in setdiff(rot_types, [RotMatrix])
-                rot_var1 = rT(zeros(Int, Rotations.numel(rT))...)
-                rot_var2 = rT(zeros(Rotations.numel(rT))...)
-                @types_approx_eq(rot_var1, rot_var2)
-            end
-        end
-
-        @testset "Testing mixed element construction" begin
-            @testset "$(rT)" for rT in rot_types
-                rot_var1 = rT(vcat(zero(Float32), zeros(Rotations.numel(rT)-1))...)
-                rot_var2 = rT(zeros(Rotations.numel(rT))...)
-                @types_approx_eq(rot_var1, rot_var2)
-            end
-        end
-
-        # test the axis vector constructor for angle axis
-        Iaa = eye(AngleAxis)
-        @testset "Testing Angle Axis vector axis construction" begin
-            @test Iaa == AngleAxis(rotation_angle(Iaa), rotation_axis(Iaa))
-            @test Iaa == AngleAxis(rotation_angle(Iaa), Vector(rotation_axis(Iaa)))
-            @test_throws DimensionMismatch AngleAxis(0.0, [1.0, 0, 0, 0])
-        end
-    end
-
 
     ################################
     # check on the inverse function
     ################################
 
     @testset "Testing inverse()" begin
-        repeats, thresh = 100, 1e-6
+        repeats = 100
         I = eye(RotMatrix{Float64})
-        @testset "$(rT)" for rT in [AngleAxis, Quaternion, SpQuat, RodriguesVec]
+        @testset "$(R)" for R in all_types
             srand(0)
             for i = 1:repeats
-                X = rT(nquatrand())
-                Rout = RotMatrix(X) * RotMatrix(inv(X))
-                rd = vecnorm(I - Rout)
-                @test rd <= thresh
+                r = rand(R)
+                @test inv(r) == r'
+                @test inv(r) == r.'
+                @test inv(r)*r ≈ I
+                @test r*inv(r) ≈ I
             end
         end
     end
-
 
     #########################################################################
     # Rotate some stuff
     #########################################################################
 
-    # a random rotation
+    # a random rotation of a random point
     @testset "Rotate Points" begin
-        thresh, repeats = 1e-10, 1000
-        @testset "$(rT)" for rT in rot_types
+        repeats = 100
+        @testset "$(R)" for R in all_types
             srand(0)
             for i = 1:repeats
-                q = i == 1 ? Quaternion(1.0, 0.0, 0.0, 0.0) : nquatrand()  # the identity is a bit special for most parametrizations
-                Rm = RotMatrix(q)
-                X = Vec{3, Float64}(randn(), randn(), randn())  # a point to rotate
-                Xo = Rm * X  # Fixed size arrays better get this right
+                r = rand(R)
+                m = SMatrix(r)
+                v = randn(SVector{3})
 
-                R = rT(Rm)  # convert R to this formulation
-                Xo_t = rotate(R, X)
-                @types_approx_eq_eps(Xo_t, Xo, thresh)
+                @test r*v ≈ m*v
             end
 
-            # rotate a Vector as well
-            Rm = RotMatrix(nquatrand())
-            X = Vec{3, Float64}(randn(), randn(), randn())  # a point to rotate
-            Xo = Rm * X
-            Xo_t = rotate(rT(Rm), [Float32(X[i]) for i in 1:3])
-            @test reduce(&, [abs(Xo[i] - Xo_t[i]) <= 1e-6 for i in 1:3])
+            # Test Base.Vector also
+            r = rand(R)
+            m = SMatrix(r)
+            v = randn(3)
+
+            @test r*v ≈ m*v
+        end
+    end
+
+    # compose two random rotations
+    @testset "Compose rotations" begin
+        repeats = 100
+        @testset "$(R1) * $(R2)" for R1 in all_types, R2 in all_types
+            srand(0)
+            for i = 1:repeats
+                r1 = rand(R1)
+                m1 = SMatrix(r1)
+
+                r2 = rand(R2)
+                m2 = SMatrix(r2)
+
+                @test r1*r2 ≈ m1*m2
+            end
         end
     end
 
 
+#=
     #########################################################################
     # Test conversions between rotation types
     #########################################################################
@@ -243,19 +218,9 @@ end
         end
     end
 
+    =#
 
-
-    #####################################################################################
-    # Check that Quaternions can import a 3 vector correctly
-    # (this is to make sure the "point" import functions from Quaternions.jl still work)
-    #####################################################################################
-
-    @testset "Quaternion 3 vector import checks" begin
-        @types_approx_eq(Quaternion([1.0,2.0,3.0]), Quaternion(0.0, 1.0, 2.0, 3.0))
-        @types_approx_eq(Quaternion(Vec(1.0,2.0,3.0)), Quaternion(0.0, 1.0, 2.0, 3.0))
-    end
-
-
+    #=
     #########################################################################
     # Check angle and axis and inv work as expected
     #########################################################################
@@ -285,73 +250,5 @@ end
         @test abs(rotation_angle(q)) < thresh
 
     end
-
-    #########################################################################
-    # Check conversion to and from mutable and immutable vectors,
-    # as well as element conversions
-    #########################################################################
-
-    @testset "Vector import / export tests" begin
-        eltypes = subtypes(AbstractFloat)  # test different AbstractFloats
-        @testset "$(rT)" for rT in rot_types
-
-            # create one
-            rot_var = eye(rT)
-
-            # export to mutable
-            @inferred vec(rot_var)
-            mvu = vec(rot_var)
-            @contents_approx_eq(rot_var, mvu)
-
-            # import from mutable
-            if (rT != RotMatrix)
-                @inferred rT(mvu)   # Julia v0.4 (v0.5 can) can't infer the type here for RotMatrix and I don't know why.  whatevs
-            end
-            rot_mvu = rT(mvu)
-            @types_approx_eq(rot_var, rot_mvu)
-
-            # export to immutable
-            @inferred Vec(rot_var) # Julia v0.4 again
-            ivu = Vec(rot_var)
-            @contents_approx_eq(rot_var, ivu)
-
-            # import from immutable
-            if (rT != RotMatrix)
-                @inferred rT(ivu)  # Julia v0.4 (v0.5 can) can't infer the type here for RotMatrix and I don't know why.  whatevs
-            end
-            rot_ivu = rT(ivu)
-            @types_approx_eq(rot_var, rot_ivu)
-
-
-            # test typed stuff
-            order_param = (length(rT.parameters) > 1) && (TypeVar == typeof(rT.parameters[end-1]))  # doe it have a missing order template parameter?
-            @testset "$(order_param ? rT{rT.parameters[1], eT} : rT{eT})" for eT in [Float32]#eltypes
-
-                # export to mutable
-                mvt = Vector{eT}(rot_var)
-                mvc = convert(Vector{eT}, mvu)
-                @types_approx_eq(mvt, mvc)
-
-                # import from mutable
-                rot_mvt = rT(mvt)
-                @contents_approx_eq_notype(rot_var, rot_mvt)
-
-                # export to immutable
-                ivt = Vec{numel(rT), eT}(rot_var)
-                ivc = convert(Vec{numel(rT), eT}, ivt)
-                @types_approx_eq(ivt, ivc)
-
-                # import from immutable
-                rot_ivt = rT(ivt)
-                @contents_approx_eq_notype(rot_var, rot_ivt)
-
-                # and test the element conversion on the rotation parameterization directly
-                if (!order_param)
-                    rot_c = convert(rT{eT}, rot_var)
-                    @contents_approx_eq(rot_c, rot_mvt)
-                end
-            end
-        end
-    end
+    =#
 end
-

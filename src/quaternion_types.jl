@@ -194,7 +194,7 @@ end
 @inline (::Type{SPQuat}){X,Y,Z}(x::X, y::Y, z::Z) = SPQuat{promote_type(promote_type(X, Y), Z)}(x, y, z)
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{SPQuat})(t::NTuple{9}) = SPQuat(Quat(t))
+@inline (::Type{SPQ}){SPQ <: SPQuat}(t::NTuple{9}) = SPQ(Quat(t))
 @inline Base.getindex(spq::SPQuat, i::Integer) = Quat(spq)[i]
 
 @inline function Base.convert{Q <: Quat}(::Type{Q}, spq::SPQuat)
@@ -209,10 +209,12 @@ end
 
 @inline Base.convert(::Type{Tuple}, spq::SPQuat) = Tuple(Quat(spq))
 
-@inline Base.:*(spq::SPQuat, x::AbstractVector) = Quat(spq) * x
+@inline Base.:*(spq::SPQuat, x::StaticVector) = Quat(spq) * x
 
 @inline Base.:*(spq::SPQuat, r::Rotation) = Quat(spq) * r
+@inline Base.:*(spq::SPQuat, r::RotMatrix) = Quat(spq) * r
 @inline Base.:*(r::Rotation, spq::SPQuat) = r * Quat(spq)
+@inline Base.:*(r::RotMatrix, spq::SPQuat) = r * Quat(spq)
 @inline Base.:*(spq1::SPQuat, spq2::SPQuat) = Quat(spq1) * Quat(spq2)
 
 @inline Base.inv(spq::SPQuat) = SPQuat(-spq.x, -spq.y, -spq.z)
