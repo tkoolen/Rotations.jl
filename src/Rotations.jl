@@ -6,7 +6,7 @@ module Rotations
 using Compat
 using StaticArrays
 
-import Base: convert, eltype, size, length, getindex, inv, *, Tuple
+import Base: convert, eltype, size, length, getindex, inv, *, Tuple, eye
 
 include("core_types.jl")
 include("quaternion_types.jl")

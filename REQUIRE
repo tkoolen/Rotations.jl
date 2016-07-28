@@ -1,4 +1,2 @@
-julia 0.4
-Compat
-FixedSizeArrays
-Quaternions
+julia 0.5
+StaticArrays

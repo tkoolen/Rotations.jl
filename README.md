@@ -113,7 +113,7 @@ RotX(0.1) * RotY(0.2) * RotZ(0.3) === RotXYZ(0.1, 0.2, 0.3)
 
     Conceptually, these are compositions of two of the cardinal axis rotations above,
     so that `RotXY(x, y) == RotX(x) * RotY(y)` (note that the order of application to
-    a vector is right-to-left, as-in matrix-matrix-vector multiplication, `Mx * My * v`).
+    a vector is right-to-left, as-in matrix-matrix-vector multiplication: `RotXY(x, y) * v == RotX(x) * (RotY(y) * v)`).
 
 8. **Euler Angles - Three-axis rotations** `RotXYZ{T}`, `RotXYX{T}`, etc
 
@@ -122,8 +122,11 @@ RotX(0.1) * RotY(0.2) * RotZ(0.3) === RotXYZ(0.1, 0.2, 0.3)
     such as `RotXYZ`, are said to follow the [**Tait Byran**](https://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles) angle ordering,
     while those which repeat (e.g. `EulerXYX`) are said to use [**Proper Euler**](https://en.wikipedia.org/wiki/Euler_angles#Conventions) angle ordering.
 
-    Like the two-angle versions, read the application of the rotations to a
-    vector from right-to-left, so that `RotXYZ(x, y, z) * v = RotX(x) * RotY(x) * RotZ(z) * v`.
+    Like the two-angle versions, read the application of the rotations along the
+    static cardinal axes to a vector from right-to-left, so that `RotXYZ(x, y, z) * v == RotX(x) * (RotY(x) * (RotZ(z) * v))`.
+    This is the "extrinsic" representation of an Euler-angle rotation, though
+    if you prefer the "intrinsic" form it is easy to use the corresponding
+    `RotZYX(z, y, x)`.
 
 ### Import / Export
 
@@ -151,15 +154,17 @@ This package assumes [active (right handed) rotations](https://en.wikipedia.org/
 ### Why use immutables / StaticArrays?
 
 They're faster (Julia's `Array` and BLAS aren't great for 3x3 matrices) and
-don't need preallocating or garbage collection. For example, see this (now
-outdated) benchmark case:
+don't need preallocating or garbage collection. For example, see this benchmark
+case where we get a 20× speedup:
 
 ```julia
-cd(Pkg.dir("Rotations") * "/test")
-include("benchmark.jl")
-BenchMarkRotations.benchmark_mutable()
-# Rotating using mutables
-#   0.077123 seconds (3 allocations: 208 bytes)
-#   Rotating using immutables
-#   0.003569 seconds (4 allocations: 160 bytes)
+julia> cd(Pkg.dir("Rotations") * "/test")
+
+julia> include("benchmark.jl")
+
+julia > BenchMarkRotations.benchmark_mutable()
+Rotating using mutables (Base.Matrix and Base.Vector):
+  0.124035 seconds (2 allocations: 224 bytes)
+Rotating using immutables (Rotations.RotMatrix and StaticArrays.SVector):
+  0.006006 seconds
 ```

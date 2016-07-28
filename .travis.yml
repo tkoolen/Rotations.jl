@@ -4,18 +4,19 @@ os:
   - linux
   - osx
 julia:
-  - release
+#  - release
   - nightly
 notifications:
   email: false
-matrix:
-  allow_failures:
-    - julia: nightly
+#matrix:
+#  allow_failures:
+#    - julia: nightly
 # uncomment the following lines to override the default test script
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("Rotations"); Pkg.test("Rotations"; coverage=true)'
 after_success:
-    - if [ $TRAVIS_JULIA_VERSION = "release" ] && [ $TRAVIS_OS_NAME = "linux" ]; then
+#    - if [ $TRAVIS_JULIA_VERSION = "release" ] && [ $TRAVIS_OS_NAME = "linux" ]; then
+    - if [ $TRAVIS_OS_NAME = "linux" ]; then
          julia -e 'cd(Pkg.dir("Rotations")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())';
       fi
