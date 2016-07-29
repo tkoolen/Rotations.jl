@@ -223,8 +223,8 @@ end
 @inline Base.eye{T}(::Type{SPQuat{T}}) = SPQuat{T}(zero(T), zero(T), zero(T))
 
 # rotation properties
-@inline rotation_angle(spq::SPQuat) = rotation_angle(Quaternion(spq))
-@inline rotation_axis(spq::SPQuat) = rotation_axis(Quaternion(spq))
+@inline rotation_angle(spq::SPQuat) = rotation_angle(Quat(spq))
+@inline rotation_axis(spq::SPQuat) = rotation_axis(Quat(spq))
 
 # Need SPQuat parameters in the output representation
 function Base.summary(spq::SPQuat)
