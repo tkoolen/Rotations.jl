@@ -153,11 +153,6 @@ end
 @inline Base.eye(::Type{Quat}) = Quat(1.0, 0.0, 0.0, 0.0)
 @inline Base.eye{T}(::Type{Quat{T}}) = Quat{T}(one(T), zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(q::Quat)
-    "3×3 Quat{$(eltype(q))}($(q.w), $(q.x), $(q.y), $(q.z))"
-end
-
 ################################################################################
 ################################################################################
 """
@@ -225,8 +220,3 @@ end
 # rotation properties
 @inline rotation_angle(spq::SPQuat) = rotation_angle(Quat(spq))
 @inline rotation_axis(spq::SPQuat) = rotation_axis(Quat(spq))
-
-# Need SPQuat parameters in the output representation
-function Base.summary(spq::SPQuat)
-    "3×3 SPQuat{$(eltype(spq))}($(spq.x), $(spq.y), $(spq.z))"
-end

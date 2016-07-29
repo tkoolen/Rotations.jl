@@ -17,8 +17,8 @@ rotation_axis(r::Rotation) = rotation_axis(AngleAxis(r))
 # Rotation matrices should be orthoginal/unitary. Only the operations we define,
 # like multiplication, will stay as Rotations, otherwise users will get an
 # SMatrix{3,3} (e.g. rot1 + rot2 -> SMatrix)
-Base.@pure StaticArrays.similar_type{R <: Rotation}(::Union{R,Type{R}}) = SMatrix{3, 3, eltype(R)}
-Base.@pure StaticArrays.similar_type{R <: Rotation, T}(::Union{R,Type{R}}, ::Type{T}) = SMatrix{3, 3, T}
+Base.@pure StaticArrays.similar_type{R <: Rotation}(::Union{R,Type{R}}) = SMatrix{3, 3, eltype(R), 9}
+Base.@pure StaticArrays.similar_type{R <: Rotation, T}(::Union{R,Type{R}}, ::Type{T}) = SMatrix{3, 3, T, 9}
 
 # A random rotation can be obtained easily with unit quaternions
 # The unit sphere in R⁴ parameterizes quaternion rotations according to the
@@ -31,6 +31,17 @@ function Base.rand{R <: Rotation}(::Type{R})
 
     q = Quat(randn(T), randn(T), randn(T), randn(T))
     return R(q)
+end
+
+# Useful for converting arrays of rotations to another rotation eltype, for instance.
+# Only works because parameters of all the rotations are of a similar form
+# Would need to be more sophisticated if we have arbitrary dimensions, etc
+@inline function Base.promote_op{R1 <: Rotation, R2 <: Rotation}(::Type{R1}, ::Type{R2})
+    if isleaftype(R1)
+        return R1
+    else
+        return R1{eltype(R2)}
+    end
 end
 
 ################################################################################
@@ -62,11 +73,6 @@ Base.inv(r::RotMatrix) = RotMatrix(r.mat')
 @inline *(r1::Rotation, r2::RotMatrix) = RotMatrix(r1) * r2
 @inline *(r1::RotMatrix, r2::RotMatrix) = RotMatrix(r1.mat * r2.mat) # TODO check that this doesn't involve extra copying.
 
-# Removes module name from output, to match other types
-function Base.summary(r::RotMatrix)
-    "3×3 RotMatrix{$(eltype(r))}"
-end
-
 ################################################################################
 ################################################################################
 
@@ -91,4 +97,52 @@ function isrotation{T}(r::AbstractMatrix{T}, tol::Real = 1000 * eps(eltype(T)))
     d = vecnorm((r * r_trans) - eye(SMatrix{3,3}))
 
     return d < tol
+end
+
+
+# A simplification and specialization of the Base.showarray() function makes
+# everything sensible at the REPL.
+function Base.showarray(io::IO, X::Rotation, repr::Bool = true; header = true)
+    if !haskey(io, :compact)
+        io = IOContext(io, compact=true)
+    end
+    if repr
+        if isa(X, RotMatrix)
+            Base.print_matrix_repr(io, X)
+        else
+            print(io, typeof(X).name.name)
+            n_fields = length(fieldnames(typeof(X)))
+            print(io, "(")
+            for i = 1:n_fields
+                print(io, getfield(X, i))
+                if i < n_fields
+                    print(io, ", ")
+                end
+            end
+            print(io, ")")
+        end
+    else
+        if header
+            print(io, summary(X))
+            if !isa(X, RotMatrix)
+                n_fields = length(fieldnames(typeof(X)))
+                print(io, "(")
+                for i = 1:n_fields
+                    print(io, getfield(X, i))
+                    if i < n_fields
+                        print(io, ", ")
+                    end
+                end
+                print(io, ")")
+            end
+            println(io, ":")
+        end
+        punct = (" ", "  ", "")
+        Base.print_matrix(io, X, punct...)
+    end
+end
+
+# Removes module name from output, to match other types
+function Base.summary(r::Rotation)
+    "3×3 $(typeof(r).name.name){$(eltype(r))}"
 end

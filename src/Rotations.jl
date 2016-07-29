@@ -12,7 +12,7 @@ include("core_types.jl")
 include("quaternion_types.jl")
 include("angleaxis_types.jl")
 include("euler_types.jl")
-#include("quaternion_ops.jl")
+include("mean.jl")
 #include("rot_covariances.jl")
 
 

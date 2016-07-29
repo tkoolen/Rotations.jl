@@ -83,11 +83,6 @@ end
 @inline rotation_angle(aa::AngleAxis) = aa.theta #  - floor((aa.theta+pi) / (2*pi)) * 2*pi
 @inline rotation_axis(aa::AngleAxis) = SVector(aa.axis_x, aa.axis_y, aa.axis_z)
 
-# Need SPQuat parameters in the output representation
-function Base.summary(aa::AngleAxis)
-    "3×3 AngleAxis{$(eltype(aa))}($(aa.theta) rad, [$(aa.axis_x), $(aa.axis_y), $(aa.axis_z)])"
-end
-
 
 ################################################################################
 ################################################################################
@@ -185,8 +180,3 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RodriguesVec}) = RodriguesVec(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RodriguesVec{T}}) = RodriguesVec{T}(zero(T), zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(rv::RodriguesVec)
-    "3×3 RodriguesVec{$(eltype(rv))}($(rv.sx), $(rv.sy), $(rv.sz))"
-end

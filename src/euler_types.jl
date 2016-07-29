@@ -69,10 +69,6 @@ end
 @inline eye(::Type{RotX}) = RotX(0.0)
 @inline eye{T}(::Type{RotX{T}}) = RotX{T}(zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotX)
-    "3×3 RotX{$(eltype(r))}($(r.theta))"
-end
 
 """
     immutable RotY{T} <: Rotation{T}
@@ -137,10 +133,6 @@ end
 @inline eye(::Type{RotY}) = RotY(0.0)
 @inline eye{T}(::Type{RotY{T}}) = RotY{T}(zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotY)
-    "3×3 RotY{$(eltype(r))}($(r.theta))"
-end
 
 """
     immutable RotZ{T} <: Rotation{T}
@@ -201,11 +193,6 @@ end
 @inline eye{T}(::Type{RotZ{T}}) = RotZ{T}(zero(T))
 
 @inline inv(r::RotZ) = RotZ(-r.theta)
-
-# Need a good output representation
-function Base.summary(r::RotZ)
-    "3×3 RotZ{$(eltype(r))}($(r.theta))"
-end
 
 function Base.rand{R <: Union{RotX,RotY,RotZ}}(::Type{R})
     T = eltype(R)
@@ -288,11 +275,6 @@ end
 @inline eye(::Type{RotXY}) = RotXY(0.0, 0.0)
 @inline eye{T}(::Type{RotXY{T}}) = RotXY{T}(zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotXY)
-    "3×3 RotXY{$(eltype(r))}($(r.theta1), $(r.theta2))"
-end
-
 
 """
     immutable RotYX{T} <: Rotation{T}
@@ -357,11 +339,6 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotYX}) = RotYX(0.0, 0.0)
 @inline eye{T}(::Type{RotYX{T}}) = RotYX{T}(zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotYX)
-    "3×3 RotYX{$(eltype(r))}($(r.theta1), $(r.theta2))"
-end
 
 
 """
@@ -428,11 +405,6 @@ end
 @inline eye(::Type{RotXZ}) = RotXZ(0.0, 0.0)
 @inline eye{T}(::Type{RotXZ{T}}) = RotXZ{T}(zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotXZ)
-    "3×3 RotXZ{$(eltype(r))}($(r.theta1), $(r.theta2))"
-end
-
 
 """
     immutable RotZX{T} <: Rotation{T}
@@ -497,11 +469,6 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotZX}) = RotZX(0.0, 0.0)
 @inline eye{T}(::Type{RotZX{T}}) = RotZX{T}(zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotZX)
-    "3×3 RotZX{$(eltype(r))}($(r.theta1), $(r.theta2))"
-end
 
 
 """
@@ -568,11 +535,6 @@ end
 @inline eye(::Type{RotZY}) = RotZY(0.0, 0.0)
 @inline eye{T}(::Type{RotZY{T}}) = RotZY{T}(zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotZY)
-    "3×3 RotZY{$(eltype(r))}($(r.theta1), $(r.theta2))"
-end
-
 
 """
     immutable RotYZ{T} <: Rotation{T}
@@ -637,12 +599,6 @@ end
 @inline eye{T}(::Type{RotYZ{T}}) = RotYZ{T}(zero(T), zero(T))
 
 @inline inv(r::RotYZ) = RotZY(-r.theta2, -r.theta1)
-
-# Need a good output representation
-function Base.summary(r::RotYZ)
-    "3×3 RotYZ{$(eltype(r))}($(r.theta1), $(r.theta2))"
-end
-
 
 function Base.rand{R <: Union{RotXY,RotYZ,RotZX, RotXZ, RotYX, RotZY}}(::Type{R})
     T = eltype(R)
@@ -744,12 +700,6 @@ end
 @inline eye(::Type{RotXYX}) = RotXYX(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotXYX{T}}) = RotXYX{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotXYX)
-    "3×3 RotXYX{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
-
 """
     immutable RotXZX{T} <: Rotation{T}
     RotXZX(theta1, theta2, theta3)
@@ -830,12 +780,6 @@ end
 @inline eye(::Type{RotXZX}) = RotXZX(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotXZX{T}}) = RotXZX{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotXZX)
-    "3×3 RotXZX{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
-
 """
     immutable RotYXY{T} <: Rotation{T}
     RotYXY(theta1, theta2, theta3)
@@ -915,11 +859,6 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotYXY}) = RotYXY(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotYXY{T}}) = RotYXY{T}(zero(T), zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotYXY)
-    "3×3 RotYXY{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
 
 
 """
@@ -1002,11 +941,6 @@ end
 @inline eye(::Type{RotYZY}) = RotYZY(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotYZY{T}}) = RotYZY{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotYZY)
-    "3×3 RotYZY{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
 
 """
     immutable RotZXZ{T} <: Rotation{T}
@@ -1088,11 +1022,6 @@ end
 @inline eye(::Type{RotZXZ}) = RotZXZ(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotZXZ{T}}) = RotZXZ{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotZXZ)
-    "3×3 RotZXZ{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
 
 """
     immutable RotZYZ{T} <: Rotation{T}
@@ -1173,12 +1102,6 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotZYZ}) = RotZYZ(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotZYZ{T}}) = RotZYZ{T}(zero(T), zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotZYZ)
-    "3×3 RotZYZ{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
 
 
 ###############################
@@ -1271,11 +1194,6 @@ end
 @inline eye(::Type{RotXYZ}) = RotXYZ(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotXYZ{T}}) = RotXYZ{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotXYZ)
-    "3×3 RotXYZ{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
 
 """
     immutable RotZYX{T} <: Rotation{T}
@@ -1362,11 +1280,6 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotZYX}) = RotZYX(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotZYX{T}}) = RotZYX{T}(zero(T), zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotZYX)
-    "3×3 RotZYX{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
 
 
 """
@@ -1455,11 +1368,6 @@ end
 @inline eye(::Type{RotXZY}) = RotXZY(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotXZY{T}}) = RotXZY{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotXZY)
-    "3×3 RotXZY{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
 
 """
     immutable RotYZX{T} <: Rotation{T}
@@ -1546,11 +1454,6 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotYZX}) = RotYZX(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotYZX{T}}) = RotYZX{T}(zero(T), zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotYZX)
-    "3×3 RotYZX{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
 
 
 """
@@ -1639,11 +1542,6 @@ end
 @inline eye(::Type{RotYXZ}) = RotYXZ(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotYXZ{T}}) = RotYXZ{T}(zero(T), zero(T), zero(T))
 
-# Need a good output representation
-function Base.summary(r::RotYXZ)
-    "3×3 RotYXZ{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
-
 
 """
     immutable RotZXY{T} <: Rotation{T}
@@ -1730,8 +1628,3 @@ end
 # define null rotations for convenience
 @inline eye(::Type{RotZXY}) = RotZXY(0.0, 0.0, 0.0)
 @inline eye{T}(::Type{RotZXY{T}}) = RotZXY{T}(zero(T), zero(T), zero(T))
-
-# Need a good output representation
-function Base.summary(r::RotZXY)
-    "3×3 RotZXY{$(eltype(r))}($(r.theta1), $(r.theta2), $(r.theta3))"
-end
