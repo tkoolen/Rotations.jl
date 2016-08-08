@@ -1,5 +1,5 @@
 # we generate code in this module, so precompile where possible
-__precompile__(true)
+#__precompile__(true)
 
 module Rotations
 
@@ -14,6 +14,7 @@ include("angleaxis_types.jl")
 include("euler_types.jl")
 include("mean.jl")
 #include("rot_covariances.jl")
+include("derivatives.jl")
 
 
 export
@@ -30,6 +31,9 @@ export
 
     # angle and axis introspection
     rotation_angle,
-    rotation_axis
+    rotation_axis,
+
+    # derivatives (names clash with ForwarDiff?)
+    jacobian, hessian
 
 end # module
