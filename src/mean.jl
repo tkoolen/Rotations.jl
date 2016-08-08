@@ -5,7 +5,7 @@
 #
 #############################################################
 
-
+#=
 """
     mean(qvec, [method = 0])
 
@@ -21,8 +21,16 @@ Args:
             - if 1, the returned rotation minimizes sum_i=1:n (phi_i ^2) where phi_i is the angle of Qe_i, with  Qbar = Q_i x Qe_i
               this should be about the same as method == 0 if phi_i are all small (note: still not implemented)
 """
+=#
+
+"""
+    mean(r::AbstractVector{Rotation})  ->  r̄
+
+Find the mean `r̄` of a set of rotations `r`. The returned rotation minimizes `sum_i=1:n (||r[i] - r̄||)`  with `||` the Frobenius norm, or
+equivalently minimizes `sum_i=1:n (sin(ϕ[i] / 2))^2`, where `ϕ[i] = rotation_angle(r[i] / r̄)`.
+"""
 function Base.mean{T}(qvec::AbstractVector{Quat{T}}, method::Integer = 0)
-    if (method == 0)
+    #if (method == 0)
         M = zeros(4, 4)
         for i = 1:length(qvec)
             q = qvec[i]
@@ -31,9 +39,9 @@ function Base.mean{T}(qvec::AbstractVector{Quat{T}}, method::Integer = 0)
         end
         evec = eigfact(Symmetric(M), 4:4)
         Qbar = Quat(evec.vectors[1], evec.vectors[2], evec.vectors[3], evec.vectors[4]) # This will renormalize the quaternion...
-    else
-        error("I haven't coded this")
-    end
+    #else
+    #    error("I haven't coded this")
+    #end
 
     return Qbar
 end

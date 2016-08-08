@@ -13,7 +13,6 @@ include("quaternion_types.jl")
 include("angleaxis_types.jl")
 include("euler_types.jl")
 include("mean.jl")
-#include("rot_covariances.jl")
 include("derivatives.jl")
 
 
@@ -31,9 +30,9 @@ export
 
     # angle and axis introspection
     rotation_angle,
-    rotation_axis,
+    rotation_axis
 
     # derivatives (names clash with ForwarDiff?)
-    jacobian, hessian
+    #jacobian, hessian
 
 end # module

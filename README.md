@@ -43,6 +43,8 @@ q3 = q * q2
 q_inv = q'
 q_inv == inv(q)
 p ≈ q_inv * (q * p)
+q4 = q3 / q2  # q4 = q3 * inv(q2)
+q5 = q3 \ q2  # q5 = inv(q3) * q2
 
 # convert to a Stereographic quaternion projection (recommended for applications with differentiation)
 spq = SPQuat(r)
@@ -50,6 +52,8 @@ spq = SPQuat(r)
 # convert to the Angle-axis parameterization, or related Rodrigues vector
 aa = AngleAxis(r)
 rv = RodriguesVec(r)
+ϕ = rotation_angle(r)
+v = rotation_axis(r)
 
 # convert to Euler angles, composed of X/Y/Z axis rotations (Z applied first)
 # (all combinations of "RotABC" are defined)
@@ -60,6 +64,12 @@ r_x = RotX(0.1)
 
 # Composing axis rotations together automatically results in Euler parameterization
 RotX(0.1) * RotY(0.2) * RotZ(0.3) === RotXYZ(0.1, 0.2, 0.3)
+
+# Can calculate Jacobian - derivatives of rotations with respect to parameters
+j1 = Rotations.jacobian(RotMatrix, q) # How does the matrix change w.r.t the 4 Quat parameters?
+j2 = Rotations.jacobian(q, p) # How does the rotated point q*p change w.r.t. the 4 Quat parameters?
+# ... all Jacobian's involving RotMatrix, SPQuat and Quat are implemented
+# (SPQuat is ideal for optimization purposes)
 ```
 
 ### Rotation Parameterizations
@@ -69,8 +79,10 @@ RotX(0.1) * RotY(0.2) * RotZ(0.3) === RotXYZ(0.1, 0.2, 0.3)
     A 3 x 3 rotation matrix storing the rotation.  This is a simple wrapper for
     a [StaticArrays](https://github.com/andyferris/StaticArrays.jl) `SMatrix{3,3,T}`.
     A rotation matrix `R` should have the property `I = R * R'`, but this isn't
-    enforced by the constructor.
-
+    enforced by the constructor. On the other hand, all the types below are
+    guaranteed to be "proper" rotations for all input parameters (equivalently:
+    parity conserving, in *SO(3)*, `det(r) = 1`, or a rotation without
+    reflection).
 
 2. **Arbitrary Axis Rotation** `AngleAxis{T}`
 
