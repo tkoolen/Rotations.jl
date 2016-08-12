@@ -46,6 +46,6 @@ function Base.mean{T}(qvec::AbstractVector{Quat{T}}, method::Integer = 0)
     return Qbar
 end
 
-function Base.mean{R<:Rotation}(vec::AbstractVector{R}, method::Integer = 0)
-    R(mean(convert(Vector{Quat{eltype(R)}}, vec), method))
+function Base.mean{R<:Rotation}(vec::AbstractVector{R})
+    R(mean(convert(Vector{Quat{eltype(R)}}, vec)))
 end

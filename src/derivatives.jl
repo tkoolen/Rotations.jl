@@ -137,7 +137,6 @@ end
 # Jacobian converting from a Quaternion to an SpQuat
 #
 function jacobian{T}(::Type{SPQuat},  q::Quat{T})
-
     den = (1 + q.w)
     dalpha2dQs = (-den - (1 - q.w)) / (den * den)
 
@@ -146,9 +145,13 @@ function jacobian{T}(::Type{SPQuat},  q::Quat{T})
     alpha2 = (1 - q.w) / (1 + q.w)
     dSpqdQv = 1/2 * (alpha2 + 1)
 
-    @SMatrix [ dSpqdQs[1]  dSpqdQv  zero(T)   zero(T) ;
-               dSpqdQs[2]  zero(T)  dSpqdQv   zero(T) ;
-               dSpqdQs[3]  zero(T)  zero(T)   dSpqdQv ]
+    J0 = @SMatrix [ dSpqdQs[1]  dSpqdQv  zero(T)   zero(T) ;
+                    dSpqdQs[2]  zero(T)  dSpqdQv   zero(T) ;
+                    dSpqdQs[3]  zero(T)  zero(T)   dSpqdQv ]
+
+    # Need to project out norm component of Quat
+    dQ = @SVector [q.w, q.x, q.y, q.z]
+    return J0 - (J0*dQ)*dQ'
 end
 
 
@@ -158,20 +161,17 @@ end
 #
 #######################################################
 
-function jacobian(q::RotMatrix, X::AbstractVector)
+# Note: this is *not* projected into the orthogonal matrix tangent space.
+# can do this by projecting each 3x3 matrix (row of 9) by (jacobian[i] - r * jacabian[i]' * r) / 2   (for i = 1:3)
+function jacobian(r::RotMatrix, X::AbstractVector)
     @assert length(X) === 3
-    T = promote_type(eltype(q), eltype(X))
+    T = promote_type(eltype(r), eltype(X))
     Z = zero(T)
 
-    @inbounds return @SMatrix [ X[1] X[1] X[1] Z    Z    Z    Z    Z    Z    ;
-                                Z    Z    Z    X[2] X[2] X[2] Z    Z    Z    ;
-                                Z    Z    Z    Z    Z    Z    X[3] X[3] X[3] ]
+    @inbounds return @SMatrix [ X[1] Z    Z     X[2]  Z     Z     X[3]  Z     Z    ;
+                                Z    X[1] Z     Z     X[2]  Z     Z     X[3]  Z    ;
+                                Z    Z    X[1]  Z     Z     X[2]  Z     Z     X[3] ]
 end
-
-# cross product derivative (w.r.t the right hand side)
-#d_cross{T}(u::SVector{3,T}) = @SMatrix [ zero(T)  -u[3]      u[2]    ;
-#                                         u[3]      zero(T)  -u[1]    ;
-#                                        -u[2]      u[1]      zero(T) ]
 
 @inline function d_cross{T}(u::AbstractVector{T})
     @assert length(u) === 3
@@ -203,7 +203,7 @@ end
 
 function jacobian(spq::SPQuat, X::AbstractVector)
     dQ = jacobian(Quat, spq)
-    q = Quaternion(spq)
+    q = Quat(spq)
     return jacobian(q, X) * dQ
 end
 

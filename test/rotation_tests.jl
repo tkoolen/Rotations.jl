@@ -1,6 +1,4 @@
 # function to perform tests of the rotation functions in the Rotations module
-using StaticArrays
-using Rotations
 
 #=
 ########################

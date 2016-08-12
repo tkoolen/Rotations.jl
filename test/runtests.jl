@@ -1,5 +1,6 @@
 using Base.Test
 using Rotations
+using StaticArrays
 
 # TODO test mean()
 

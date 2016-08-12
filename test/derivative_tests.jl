@@ -13,7 +13,6 @@ using ForwardDiff
         # Quaternion to rotation matrix
         @testset "Jacobian (Quat -> RotMatrix)" begin
             for i = 1:10    # do some repeats
-
                 q = rand(Quat)  # a random quaternion
 
                 # test jacobian to a Rotation matrix
@@ -25,70 +24,52 @@ using ForwardDiff
                 @test FD_jac ≈ R_jac
             end
         end
-#=
-        # SpQuat to Quaternion
-        @testset "Jacobian (SpQuat -> Quaternion)" begin
 
+        # SPQuat to Quat
+        @testset "Jacobian (SPQuat -> Quat)" begin
             for i = 1:10    # do some repeats
-
-                q = nquatrand()                           # a random quaternion
-                spq = Rotations.quat_to_spquat_naive(q)   # I want to test the full domain of SpQuats, not just the one with ||.|| < 1
-
-                # transformation function
-                J(X) = vec(Quaternion(SpQuat(X...)))
+                spq = rand(SPQuat)  # a random SPQUat
+                # TODO: should test the full domain of SPQuats, not just the one with ||.|| < 1
 
                 # test jacobian to a Rotation matrix
-                R_jac = Rotations.jacobian(Quaternion, spq)
-                FD_jac = ForwardDiff.jacobian(J, vec(spq))
+                R_jac = Rotations.jacobian(Quat, spq)
+                FD_jac = ForwardDiff.jacobian(x -> (q = Quat(SPQuat(x[1],x[2],x[3]));
+                                                    SVector(q.w, q.x, q.y, q.z)),
+                                              SVector(spq.x, spq.y, spq.z))
 
                 # compare
-                @test all(abs(Matrix(R_jac) - FD_jac) .< thresh)
-
+                @test FD_jac ≈ R_jac
             end
         end
 
-
-        # Quaternion to SpQuat
-        @testset "Jacobian (Quaternion -> SpQuat)" begin
-
+        # SPQuat to Quat
+        @testset "Jacobian (Quat -> SPQuat)" begin
             for i = 1:10    # do some repeats
-
-                q = nquatrand()                           # a random quaternion
-
-                # transformation function
-                J(X) = vec(SpQuat(Quaternion(X...)))
+                q = rand(Quat)  # a random Quat
 
                 # test jacobian to a Rotation matrix
-                R_jac = Rotations.jacobian(SpQuat, q)
-                FD_jac = ForwardDiff.jacobian(J, vec(q))
+                R_jac = Rotations.jacobian(SPQuat, q)
+                FD_jac = ForwardDiff.jacobian(x -> (spq = SPQuat(Quat(x[1],x[2],x[3],x[4]));
+                                                    SVector(spq.x, spq.y, spq.z)),
+                                              SVector(q.w, q.x, q.y, q.z))
 
                 # compare
-                @test all(abs(Matrix(R_jac) - FD_jac) .< thresh)
-
+                @test FD_jac ≈ R_jac
             end
         end
 
-        # SpQuat to rotation matrix
-        @testset "Jacobian (SpQuat -> RotMatrix)" begin
-
-            # transformation function
-            function Jr(X)
-                R = Tuple(RotMatrix(SpQuat(X...)))
-                V = [R[1]..., R[2]..., R[3]...]
-            end
-
+        # SPQuat to rotation matrix
+        @testset "Jacobian (SPQuat -> RotMatrix)" begin
             for i = 1:10    # do some repeats
-
-                q = nquatrand()  # a random quaternion
-                spq = Rotations.quat_to_spquat_naive(q)   # I want to test the full domain of SpQuats, not just the one with ||.|| < 1
+                spq = rand(SPQuat)  # a random quaternion
 
                 # test jacobian to a Rotation matrix
                 R_jac = Rotations.jacobian(RotMatrix, spq)
-                FD_jac = ForwardDiff.jacobian(Jr, vec(spq))
+                FD_jac = ForwardDiff.jacobian(x -> SVector{9}(SPQuat(x[1], x[2], x[3])),
+                                              SVector(spq.x, spq.y, spq.z))
 
                 # compare
-                @test all(abs(Matrix(R_jac) - FD_jac) .< thresh)
-
+                @test FD_jac ≈ R_jac
             end
         end
 
@@ -117,6 +98,8 @@ using ForwardDiff
 
             end
         end
+
+
         @testset "Jacobian (Quaternion muliplication w.r.t. the left quaternion)" begin
 
             for i = 1:10    # do some repeats
@@ -138,27 +121,54 @@ using ForwardDiff
         end =#
 
 
-        # rotate a point by a quaternion
-        @testset "Jacobian (Quaternion rotation)" begin
-
+        # rotate a point by a RotMatrix
+        @testset "Jacobian (RotMatrix rotation)" begin
             for i = 1:10    # do some repeats
-
-                q = nquatrand()    # a random quaternion
-                X = randn(Vec{3,Float64})
-
-                # transformation function
-                J(q) = Vector(rotate(Quaternion(q...), X))
+                r = rand(RotMatrix{Float64})    # a random quaternion
+                v = randn(SVector{3,Float64})
 
                 # test jacobian to a Rotation matrix
-                R_jac = Rotations.jacobian(q, X)
-                FD_jac = ForwardDiff.jacobian(J, vec(q))
+                R_jac = Rotations.jacobian(r, v)
+                FD_jac = ForwardDiff.jacobian(x -> RotMatrix(x)*v,
+                                              SVector(r))
 
                 # compare
-                @test all(abs(Matrix(R_jac) - FD_jac) .< thresh)
-
+                @test FD_jac ≈ R_jac
             end
         end
 
+        # rotate a point by a quaternion
+        @testset "Jacobian (Quat rotation)" begin
+            for i = 1:10    # do some repeats
+                q = rand(Quat)    # a random quaternion
+                v = randn(SVector{3,Float64})
+
+                # test jacobian to a Rotation matrix
+                R_jac = Rotations.jacobian(q, v)
+                FD_jac = ForwardDiff.jacobian(x -> Quat(x[1], x[2], x[3], x[4])*v,
+                                              SVector(q.w, q.x, q.y, q.z))
+
+                # compare
+                @test FD_jac ≈ R_jac
+            end
+        end
+
+        # rotate a point by a SPQuat
+        @testset "Jacobian (SPQuat rotation)" begin
+            for i = 1:10    # do some repeats
+                spq = rand(SPQuat)    # a random quaternion
+                v = randn(SVector{3,Float64})
+
+                # test jacobian to a Rotation matrix
+                R_jac = Rotations.jacobian(spq, v)
+                FD_jac = ForwardDiff.jacobian(x -> SPQuat(x[1], x[2], x[3])*v,
+                                              SVector(spq.x, spq.y, spq.z))
+
+                # compare
+                @test FD_jac ≈ R_jac
+            end
+        end
+#=
         # rotate a point by an SpQuat
         @testset "Jacobian (SpQuat rotation)" begin
 
