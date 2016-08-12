@@ -69,7 +69,7 @@ RotX(0.1) * RotY(0.2) * RotZ(0.3) === RotXYZ(0.1, 0.2, 0.3)
 j1 = Rotations.jacobian(RotMatrix, q) # How does the matrix change w.r.t the 4 Quat parameters?
 j2 = Rotations.jacobian(q, p) # How does the rotated point q*p change w.r.t. the 4 Quat parameters?
 # ... all Jacobian's involving RotMatrix, SPQuat and Quat are implemented
-# (SPQuat is ideal for optimization purposes)
+# (SPQuat is ideal for optimization purposes - no constaints/singularities)
 ```
 
 ### Rotation Parameterizations
