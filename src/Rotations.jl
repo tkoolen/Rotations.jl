@@ -3,7 +3,6 @@
 
 module Rotations
 
-using Compat
 using StaticArrays
 
 import Base: convert, eltype, size, length, getindex, inv, *, Tuple, eye
