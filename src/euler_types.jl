@@ -24,16 +24,17 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotX}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotX{T}, i::Integer)
+    T2 = Base.promote_op(sin, T)
     if i == 1
-        one(T)
+        one(T2)
     elseif i < 5
-        zero(T)
+        zero(T2)
     elseif i == 5
         cos(r.theta)
     elseif i == 6
         sin(r.theta)
     elseif i == 7
-        zero(T)
+        zero(T2)
     elseif i == 8
         -sin(r.theta)
     elseif i == 9
@@ -44,9 +45,10 @@ end
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotX{T})
-    (one(T),  zero(T),      zero(T),   # transposed representation
-     zero(T), cos(r.theta), sin(r.theta),
-     zero(T), -sin(r.theta), cos(r.theta))
+    T2 = Base.promote_op(sin, T)
+    (one(T2),   zero(T2),     zero(T2),   # transposed representation
+     zero(T2),  cos(r.theta), sin(r.theta),
+     zero(T2), -sin(r.theta), cos(r.theta))
 end
 
 @inline function Base.:*(r::RotX, v::StaticVector)
@@ -55,7 +57,7 @@ end
     end
 
     ct, st = cos(r.theta), sin(r.theta)
-    T = promote_type(eltype(r), eltype(v))
+    T = Base.promote_op(*, typeof(st), eltype(v))
     return similar_type(v,T)(v[1],
                              v[2] * ct - v[3] * st,
                              v[3] * ct + v[2] * st)
@@ -84,22 +86,23 @@ end
 
 @inline (::Type{R}){R<:RotY}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotY{T}, i::Integer)
+    T2 = Base.promote_op(sin, T)
     if i == 1
         cos(r.theta)
     elseif i == 2
-        zero(T)
+        zero(T2)
     elseif i == 3
         -sin(r.theta)
     elseif i == 4
-        zero(T)
+        zero(T2)
     elseif i == 5
-        one(T)
+        one(T2)
     elseif i == 6
-        zero(T)
+        zero(T2)
     elseif i == 7
         sin(r.theta)
     elseif i == 8
-        zero(T)
+        zero(T2)
     elseif i == 9
         cos(r.theta)
     else
@@ -108,9 +111,10 @@ end
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotY{T})
-    (cos(r.theta), zero(T), -sin(r.theta),   # transposed representation
-     zero(T),      one(T),   zero(T),
-     sin(r.theta), zero(T),  cos(r.theta))
+    T2 = Base.promote_op(sin, T)
+    (cos(r.theta), zero(T2), -sin(r.theta),   # transposed representation
+     zero(T2),     one(T2),   zero(T2),
+     sin(r.theta), zero(T2),  cos(r.theta))
 end
 
 @inline function Base.:*(r::RotY, v::StaticVector)
@@ -119,7 +123,7 @@ end
     end
 
     ct, st = cos(r.theta), sin(r.theta)
-    T = promote_type(eltype(r), eltype(v))
+    T = Base.promote_op(*, typeof(st), eltype(v))
     return similar_type(v,T)(v[1] * ct + v[3] * st,
                              v[2],
                              v[3] * ct - v[1] * st)
@@ -149,29 +153,31 @@ end
 
 @inline (::Type{R}){R<:RotZ}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZ{T}, i::Integer)
+    T2 = Base.promote_op(sin, T)
     if i == 1
         cos(r.theta)
     elseif i == 2
         sin(r.theta)
     elseif i == 3
-        zero(T)
+        zero(T2)
     elseif i == 4
         -sin(r.theta)
     elseif i == 5
         cos(r.theta)
     elseif i < 9
-        zero(T)
+        zero(T2)
     elseif i == 9
-        one(T)
+        one(T2)
     else
         throw(BoundsError(r,i))
     end
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZ{T})
-    ( cos(r.theta), sin(r.theta), zero(T),   # transposed representation
-     -sin(r.theta), cos(r.theta), zero(T),
-      zero(T),      zero(T),      one(T))
+    T2 = Base.promote_op(sin, T)
+    ( cos(r.theta), sin(r.theta), zero(T2),   # transposed representation
+     -sin(r.theta), cos(r.theta), zero(T2),
+      zero(T2),     zero(T2),     one(T2))
 end
 
 @inline function Base.:*(r::RotZ, v::StaticVector)
@@ -180,7 +186,7 @@ end
     end
 
     ct, st = cos(r.theta), sin(r.theta)
-    T = promote_type(eltype(r), eltype(v))
+    T = Base.promote_op(*, typeof(st), eltype(v))
     return similar_type(v,T)(v[1] * ct - v[2] * st,
                              v[2] * ct + v[1] * st,
                              v[3])
@@ -242,9 +248,11 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T2 = typeof(sinθ₁)
+
     # transposed representation
     (cosθ₂,  sinθ₁*sinθ₂,  cosθ₁*-sinθ₂,
-     zero(T),      cosθ₁,          sinθ₁,
+     zero(T2),      cosθ₁,          sinθ₁,
      sinθ₂,  -sinθ₁*cosθ₂,   cosθ₁*cosθ₂)
 end
 
@@ -253,12 +261,12 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(cosθ₂*v[1] + sinθ₂*v[3],
                              sinθ₁*sinθ₂*v[1] + cosθ₁*v[2] + -sinθ₁*cosθ₂*v[3],
@@ -307,8 +315,10 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T2 = typeof(sinθ₁)
+
     # transposed representation
-    (cosθ₁,        zero(T),       -sinθ₁,
+    (cosθ₁,        zero(T2),       -sinθ₁,
      sinθ₁*sinθ₂,  cosθ₂,   cosθ₁*sinθ₂,
      sinθ₁*cosθ₂,  -sinθ₂,  cosθ₁*cosθ₂)
 end
@@ -318,12 +328,12 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(cosθ₁*v[1] + sinθ₁*sinθ₂*v[2] + sinθ₁*cosθ₂*v[3],
                              cosθ₂*v[2] + -sinθ₂*v[3],
@@ -372,10 +382,12 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T2 = typeof(sinθ₁)
+
     # transposed representation
     (cosθ₂,   cosθ₁*sinθ₂,  sinθ₁*sinθ₂,
      -sinθ₂,  cosθ₁*cosθ₂,  sinθ₁*cosθ₂,
-     zero(T),       -sinθ₁,       cosθ₁)
+     zero(T2),       -sinθ₁,       cosθ₁)
 end
 
 @inline function Base.:*(r::RotXZ, v::StaticVector)
@@ -383,12 +395,12 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(cosθ₂*v[1] + -sinθ₂*v[2],
                              cosθ₁*sinθ₂*v[1] + cosθ₁*cosθ₂*v[2] + -sinθ₁*v[3],
@@ -437,8 +449,10 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T2 = typeof(sinθ₁)
+
     # transposed representation
-    ( cosθ₁,         sinθ₁,         zero(T),
+    ( cosθ₁,         sinθ₁,         zero(T2),
      -sinθ₁*cosθ₂,   cosθ₁*cosθ₂,   sinθ₂,
       sinθ₁*sinθ₂,   cosθ₁*-sinθ₂,  cosθ₂)
 end
@@ -448,12 +462,12 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(cosθ₁*v[1] + -sinθ₁*cosθ₂*v[2] + sinθ₁*sinθ₂*v[3],
                              sinθ₁*v[1] + cosθ₁*cosθ₂*v[2] + cosθ₁*-sinθ₂*v[3],
@@ -502,9 +516,11 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T2 = typeof(sinθ₁)
+
     # transposed representation
     ( cosθ₁*cosθ₂,  sinθ₁*cosθ₂, -sinθ₂,
-     -sinθ₁,        cosθ₁,        zero(T),
+     -sinθ₁,        cosθ₁,        zero(T2),
       cosθ₁*sinθ₂,  sinθ₁*sinθ₂,  cosθ₂)
 end
 
@@ -513,17 +529,18 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
+
     return similar_type(v,T)(cosθ₁*cosθ₂*v[1] + -sinθ₁*v[2] + cosθ₁*sinθ₂*v[3],
                              sinθ₁*cosθ₂*v[1] + cosθ₁*v[2] + sinθ₁*sinθ₂*v[3],
                              -sinθ₂*v[1] + cosθ₂*v[3])
 end
+
 
 @inline Base.:*(r1::RotZ, r2::RotY) = RotZY(r1.theta, r2.theta)
 @inline Base.:*(r1::RotZY, r2::RotY) = RotZY(r1.theta1, r1.theta2 + r2.theta)
@@ -567,10 +584,12 @@ end
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
 
+    T2 = typeof(sinθ₁)
+
     # transposed representation
     (cosθ₁*cosθ₂,   sinθ₂,    -sinθ₁*cosθ₂,
      cosθ₁*-sinθ₂,  cosθ₂,     sinθ₁*sinθ₂,
-     sinθ₁,         zero(T),      cosθ₁)
+     sinθ₁,         zero(T2),      cosθ₁)
 end
 
 @inline function Base.:*(r::RotYZ, v::StaticVector)
@@ -578,12 +597,12 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(cosθ₁*cosθ₂*v[1] + cosθ₁*-sinθ₂*v[2] + sinθ₁*v[3],
                              sinθ₂*v[1] + cosθ₂*v[2],
@@ -674,14 +693,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         cosθ₂*v[1] + sinθ₂*sinθ₃*v[2] + sinθ₂*cosθ₃*v[3],
@@ -754,14 +773,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         cosθ₂*v[1] + -sinθ₂*cosθ₃*v[2] + sinθ₂*sinθ₃*v[3],
@@ -834,14 +853,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         (cosθ₁*cosθ₃ + sinθ₁*cosθ₂*-sinθ₃)*v[1] + sinθ₁*sinθ₂*v[2] + (cosθ₁*sinθ₃ + sinθ₁*cosθ₂*cosθ₃)*v[3],
@@ -915,14 +934,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         (cosθ₁*cosθ₂*cosθ₃ + sinθ₁*-sinθ₃)*v[1] + cosθ₁*-sinθ₂*v[2] + (cosθ₁*cosθ₂*sinθ₃ + sinθ₁*cosθ₃)*v[3],
@@ -996,14 +1015,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
          (cosθ₁*cosθ₃ + -sinθ₁*cosθ₂*sinθ₃)*v[1] + (cosθ₁*-sinθ₃ + -sinθ₁*cosθ₂*cosθ₃)*v[2] + sinθ₁*sinθ₂*v[3],
@@ -1077,14 +1096,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         (cosθ₁*cosθ₂*cosθ₃ + -sinθ₁*sinθ₃)*v[1] + (cosθ₁*cosθ₂*-sinθ₃ + -sinθ₁*cosθ₃)*v[2] + cosθ₁*sinθ₂*v[3],
@@ -1168,14 +1187,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         cosθ₂*cosθ₃*v[1] + cosθ₂*-sinθ₃*v[2] + sinθ₂*v[3],
@@ -1255,14 +1274,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         cosθ₁*cosθ₂*v[1] + (-sinθ₁*cosθ₃ + cosθ₁*sinθ₂*sinθ₃)*v[2] + (sinθ₁*sinθ₃ + cosθ₁*sinθ₂*cosθ₃)*v[3],
@@ -1342,14 +1361,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         cosθ₂*cosθ₃*v[1] + -sinθ₂*v[2] + cosθ₂*sinθ₃*v[3],
@@ -1429,14 +1448,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         cosθ₁*cosθ₂*v[1] + (cosθ₁*-sinθ₂*cosθ₃ + sinθ₁*sinθ₃)*v[2] + (cosθ₁*-sinθ₂*-sinθ₃ + sinθ₁*cosθ₃)*v[3],
@@ -1516,14 +1535,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         (cosθ₁*cosθ₃ + sinθ₁*sinθ₂*sinθ₃)*v[1] + (cosθ₁*-sinθ₃ + sinθ₁*sinθ₂*cosθ₃)*v[2] + sinθ₁*cosθ₂*v[3],
@@ -1603,14 +1622,14 @@ end
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
 
-    T = promote_type(eltype(r), eltype(v))
-
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
     cosθ₂ = cos(r.theta2)
     sinθ₃ = sin(r.theta3)
     cosθ₃ = cos(r.theta3)
+
+    T = Base.promote_op(*, typeof(sinθ₁), eltype(v))
 
     return similar_type(v,T)(
         (cosθ₁*cosθ₃ + sinθ₁*sinθ₂*-sinθ₃)*v[1] + -sinθ₁*cosθ₂*v[2] + (cosθ₁*sinθ₃ + sinθ₁*sinθ₂*cosθ₃)*v[3],
