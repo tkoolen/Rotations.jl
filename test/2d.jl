@@ -2,6 +2,16 @@ using Rotations, StaticArrays, Base.Test
 
 @testset "2d Rotations" begin
 
+    #################################
+    # Traits, types, and construction
+    #################################
+
+    @testset "Core" begin
+        r = eye(RotMatrix{2,Float32})
+        @test RotMatrix((1,0,0,1)) == RotMatrix(@SMatrix [1 0; 0 1])
+        @test_throws ErrorException RotMatrix((1,0,0,1,0))
+    end
+
     ###############################
     # Check fixed relationships
     ###############################
@@ -10,6 +20,8 @@ using Rotations, StaticArrays, Base.Test
         I = eye(SMatrix{2,2,Float64})
         I32 = eye(SMatrix{2,2,Float32})
         R = RotMatrix{2}
+        @test @inferred(size(R)) == (2,2)
+        @test @inferred(size(R{Float32})) == (2,2)
         @test eye(R)::R == I
         @test eye(R{Float32})::R{Float32} == I32
     end
@@ -25,6 +37,7 @@ using Rotations, StaticArrays, Base.Test
         srand(0)
         for i = 1:repeats
             r = rand(R)
+            @test isrotation(r)
             @test inv(r) == r'
             @test inv(r) == r.'
             @test inv(r)*r ≈ I
@@ -70,6 +83,10 @@ using Rotations, StaticArrays, Base.Test
             m2 = SMatrix(r2)
 
             @test r1*r2 ≈ m1*m2
+            θ1, θ2 = atan2(r1[2,1],r1[1,1]), atan2(r2[2,1],r2[1,1])
+            @test r1*r2 ≈ RotMatrix(θ1+θ2)
+            @test r1/r2 ≈ RotMatrix(θ1-θ2)
+            @test r1\r2 ≈ RotMatrix(θ2-θ1)
         end
     end
 
@@ -96,6 +113,13 @@ using Rotations, StaticArrays, Base.Test
         end
     end
 
+    @testset "show" begin
+        io = IOBuffer()
+        r = rand(RotMatrix{2})
+        show(io, MIME("text/plain"), r)
+        str = takebuf_string(io)
+        @test startswith(str, "2×2 RotMatrix{Float64}:")
+    end
 end
 
 nothing
