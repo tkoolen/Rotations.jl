@@ -163,7 +163,7 @@ end
 
 # Note: this is *not* projected into the orthogonal matrix tangent space.
 # can do this by projecting each 3x3 matrix (row of 9) by (jacobian[i] - r * jacabian[i]' * r) / 2   (for i = 1:3)
-function jacobian(r::RotMatrix, X::AbstractVector)
+function jacobian(r::RotMatrix{3}, X::AbstractVector)
     @assert length(X) === 3
     T = promote_type(eltype(r), eltype(X))
     Z = zero(T)

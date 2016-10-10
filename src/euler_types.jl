@@ -9,12 +9,12 @@
 # Single axis rotations #
 #########################
 """
-    immutable RotX{T} <: Rotation{T}
+    immutable RotX{T} <: Rotation{3,T}
     RotX(theta)
 
 A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
 """
-immutable RotX{T} <: Rotation{T}
+immutable RotX{T} <: Rotation{3,T}
     theta::T
 end
 
@@ -73,12 +73,12 @@ end
 
 
 """
-    immutable RotY{T} <: Rotation{T}
+    immutable RotY{T} <: Rotation{3,T}
     RotY(theta)
 
 A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
 """
-immutable RotY{T} <: Rotation{T}
+immutable RotY{T} <: Rotation{3,T}
     theta::T
 end
 
@@ -139,13 +139,13 @@ end
 
 
 """
-    immutable RotZ{T} <: Rotation{T}
+    immutable RotZ{T} <: Rotation{3,T}
     RotZ(theta)
 
 
 A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
 """
-immutable RotZ{T} <: Rotation{T}
+immutable RotZ{T} <: Rotation{3,T}
     theta::T
 end
 
@@ -218,13 +218,13 @@ end
 ######################
 
 """
-    immutable RotXY{T} <: Rotation{T}
+    immutable RotXY{T} <: Rotation{3,T}
     RotXY(theta_x, theta_y)
 
 A 3×3 rotation matrix which represents a rotation by `theta_y` about the Y axis,
 followed by a rotation by `theta_x` about the X axis.
 """
-immutable RotXY{T} <: Rotation{T}
+immutable RotXY{T} <: Rotation{3,T}
     theta1::T
     theta2::T
 end
@@ -285,13 +285,13 @@ end
 
 
 """
-    immutable RotYX{T} <: Rotation{T}
+    immutable RotYX{T} <: Rotation{3,T}
     RotYX(theta_y, theta_x)
 
 A 3×3 rotation matrix which represents a rotation by `theta_x` about the X axis,
 followed by a rotation by `theta_y` about the Y axis.
 """
-immutable RotYX{T} <: Rotation{T}
+immutable RotYX{T} <: Rotation{3,T}
     theta1::T
     theta2::T
 end
@@ -352,13 +352,13 @@ end
 
 
 """
-    immutable RotXZ{T} <: Rotation{T}
+    immutable RotXZ{T} <: Rotation{3,T}
     RotXZ(theta_x, theta_z)
 
 A 3×3 rotation matrix which represents a rotation by `theta_z` about the Z axis,
 followed by a rotation by `theta_x` about the X axis.
 """
-immutable RotXZ{T} <: Rotation{T}
+immutable RotXZ{T} <: Rotation{3,T}
     theta1::T
     theta2::T
 end
@@ -419,13 +419,13 @@ end
 
 
 """
-    immutable RotZX{T} <: Rotation{T}
+    immutable RotZX{T} <: Rotation{3,T}
     RotZX(theta_z, theta_x)
 
 A 3×3 rotation matrix which represents a rotation by `theta_x` about the X axis,
 followed by a rotation by `theta_z` about the Z axis.
 """
-immutable RotZX{T} <: Rotation{T}
+immutable RotZX{T} <: Rotation{3,T}
     theta1::T
     theta2::T
 end
@@ -486,13 +486,13 @@ end
 
 
 """
-    immutable RotZY{T} <: Rotation{T}
+    immutable RotZY{T} <: Rotation{3,T}
     RotZY(theta_z, theta_y)
 
 A 3×3 rotation matrix which represents a rotation by `theta_y` about the Y axis,
 followed by a rotation by `theta_z` about the Z axis.
 """
-immutable RotZY{T} <: Rotation{T}
+immutable RotZY{T} <: Rotation{3,T}
     theta1::T
     theta2::T
 end
@@ -554,13 +554,13 @@ end
 
 
 """
-    immutable RotYZ{T} <: Rotation{T}
+    immutable RotYZ{T} <: Rotation{3,T}
     RotYZ(theta_y, theta_z)
 
 A 3×3 rotation matrix which represents a rotation by `theta_z` about the Z axis,
 followed by a rotation by `theta_y` about the Y axis.
 """
-immutable RotYZ{T} <: Rotation{T}
+immutable RotYZ{T} <: Rotation{3,T}
     theta1::T
     theta2::T
 end
@@ -640,7 +640,7 @@ end
 ##########################
 
 """
-    immutable RotXYX{T} <: Rotation{T}
+    immutable RotXYX{T} <: Rotation{3,T}
     RotXYX(theta1, theta2, theta3)
 
 A 3×3 rotation matrix parameterized by the "proper" XYX Euler angle convention,
@@ -648,7 +648,7 @@ consisting of first a rotation about the X axis by `theta3`, followed by a
 rotation about the Y axis by `theta2`, and finally a rotation about the X axis
 by `theta1`.
 """
-immutable RotXYX{T} <: Rotation{T}
+immutable RotXYX{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -720,7 +720,7 @@ end
 @inline eye{T}(::Type{RotXYX{T}}) = RotXYX{T}(zero(T), zero(T), zero(T))
 
 """
-    immutable RotXZX{T} <: Rotation{T}
+    immutable RotXZX{T} <: Rotation{3,T}
     RotXZX(theta1, theta2, theta3)
 
 A 3×3 rotation matrix parameterized by the "proper" XZX Euler angle convention,
@@ -728,7 +728,7 @@ consisting of first a rotation about the X axis by `theta3`, followed by a
 rotation about the Z axis by `theta2`, and finally a rotation about the X axis
 by `theta1`.
 """
-immutable RotXZX{T} <: Rotation{T}
+immutable RotXZX{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -800,7 +800,7 @@ end
 @inline eye{T}(::Type{RotXZX{T}}) = RotXZX{T}(zero(T), zero(T), zero(T))
 
 """
-    immutable RotYXY{T} <: Rotation{T}
+    immutable RotYXY{T} <: Rotation{3,T}
     RotYXY(theta1, theta2, theta3)
 
 A 3×3 rotation matrix parameterized by the "proper" YXY Euler angle convention,
@@ -808,7 +808,7 @@ consisting of first a rotation about the Y axis by `theta3`, followed by a
 rotation about the X axis by `theta2`, and finally a rotation about the Y axis
 by `theta1`.
 """
-immutable RotYXY{T} <: Rotation{T}
+immutable RotYXY{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -881,7 +881,7 @@ end
 
 
 """
-    immutable RotYZY{T} <: Rotation{T}
+    immutable RotYZY{T} <: Rotation{3,T}
     RotYZY(theta1, theta2, theta3)
 
 A 3×3 rotation matrix parameterized by the "proper" YXY Euler angle convention,
@@ -889,7 +889,7 @@ consisting of first a rotation about the Y axis by `theta3`, followed by a
 rotation about the Z axis by `theta2`, and finally a rotation about the Y axis
 by `theta1`.
 """
-immutable RotYZY{T} <: Rotation{T}
+immutable RotYZY{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -962,7 +962,7 @@ end
 
 
 """
-    immutable RotZXZ{T} <: Rotation{T}
+    immutable RotZXZ{T} <: Rotation{3,T}
     RotZXZ(theta1, theta2, theta3)
 
 A 3×3 rotation matrix parameterized by the "proper" ZXZ Euler angle convention,
@@ -970,7 +970,7 @@ consisting of first a rotation about the Z axis by `theta3`, followed by a
 rotation about the X axis by `theta2`, and finally a rotation about the Z axis
 by `theta1`.
 """
-immutable RotZXZ{T} <: Rotation{T}
+immutable RotZXZ{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1043,7 +1043,7 @@ end
 
 
 """
-    immutable RotZYZ{T} <: Rotation{T}
+    immutable RotZYZ{T} <: Rotation{3,T}
     RotZYZ(theta1, theta2, theta3)
 
 A 3×3 rotation matrix parameterized by the "proper" ZXZ Euler angle convention,
@@ -1051,7 +1051,7 @@ consisting of first a rotation about the Z axis by `theta3`, followed by a
 rotation about the Y axis by `theta2`, and finally a rotation about the Z axis
 by `theta1`.
 """
-immutable RotZYZ{T} <: Rotation{T}
+immutable RotZYZ{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1128,7 +1128,7 @@ end
 ###############################
 
 """
-    immutable RotXYZ{T} <: Rotation{T}
+    immutable RotXYZ{T} <: Rotation{3,T}
     RotXYZ(theta1, theta2, theta3)
     RotXYZ(roll=r, pitch=p, yaw=y)
 
@@ -1141,7 +1141,7 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in XYZ order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-immutable RotXYZ{T} <: Rotation{T}
+immutable RotXYZ{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1215,7 +1215,7 @@ end
 
 
 """
-    immutable RotZYX{T} <: Rotation{T}
+    immutable RotZYX{T} <: Rotation{3,T}
     RotZYX(theta1, theta2, theta3)
     RotZYX(roll=r, pitch=p, yaw=y)
 
@@ -1228,7 +1228,7 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in ZYX order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-immutable RotZYX{T} <: Rotation{T}
+immutable RotZYX{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1302,7 +1302,7 @@ end
 
 
 """
-    immutable RotXZY{T} <: Rotation{T}
+    immutable RotXZY{T} <: Rotation{3,T}
     RotXZY(theta1, theta2, theta3)
     RotXZY(roll=r, pitch=p, yaw=y)
 
@@ -1315,7 +1315,7 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in XZY order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-immutable RotXZY{T} <: Rotation{T}
+immutable RotXZY{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1389,7 +1389,7 @@ end
 
 
 """
-    immutable RotYZX{T} <: Rotation{T}
+    immutable RotYZX{T} <: Rotation{3,T}
     RotYZX(theta1, theta2, theta3)
     RotYZX(roll=r, pitch=p, yaw=y)
 
@@ -1402,7 +1402,7 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in YZX order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-immutable RotYZX{T} <: Rotation{T}
+immutable RotYZX{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1476,7 +1476,7 @@ end
 
 
 """
-    immutable RotYXZ{T} <: Rotation{T}
+    immutable RotYXZ{T} <: Rotation{3,T}
     RotYXZ(theta1, theta2, theta3)
     RotYXZ(roll=r, pitch=p, yaw=y)
 
@@ -1489,7 +1489,7 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in YXZ order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-immutable RotYXZ{T} <: Rotation{T}
+immutable RotYXZ{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
@@ -1563,7 +1563,7 @@ end
 
 
 """
-    immutable RotZXY{T} <: Rotation{T}
+    immutable RotZXY{T} <: Rotation{3,T}
     RotZXY(theta1, theta2, theta3)
     RotZXY(roll=r, pitch=p, yaw=y)
 
@@ -1576,7 +1576,7 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in ZXY order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-immutable RotZXY{T} <: Rotation{T}
+immutable RotZXY{T} <: Rotation{3,T}
     theta1::T
     theta2::T
     theta3::T
