@@ -23,6 +23,15 @@ rotation_axis(r::Rotation) = rotation_axis(AngleAxis(r))
 Base.@pure StaticArrays.similar_type{R <: Rotation}(::Union{R,Type{R}}) = SMatrix{size(R)..., eltype(R), prod(size(R))}
 Base.@pure StaticArrays.similar_type{R <: Rotation, T}(::Union{R,Type{R}}, ::Type{T}) = SMatrix{size(R)..., T, prod(size(R))}
 
+function Base.rand{R <: Rotation{2}}(::Type{R})
+    T = eltype(R)
+    if T == Any
+        T = Float64
+    end
+
+    R(2π * rand(T))
+end
+
 # A random rotation can be obtained easily with unit quaternions
 # The unit sphere in R⁴ parameterizes quaternion rotations according to the
 # Haar measure of SO(3) - see e.g. http://math.stackexchange.com/questions/184086/uniform-distributions-on-the-space-of-rotations-in-3d
@@ -81,6 +90,10 @@ for N = 2:3
     end
 end
 Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Integer) = r.mat[i]
+
+@inline (::Type{RotMatrix})(θ::Real) = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
+@inline (::Type{RotMatrix{2}})(θ::Real)      = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
+@inline (::Type{RotMatrix{2,T}}){T}(θ::Real) = RotMatrix(@SMatrix T[cos(θ) -sin(θ); sin(θ) cos(θ)])
 
 # A rotation is more-or-less defined as being an orthogonal (or unitary) matrix
 Base.inv(r::RotMatrix) = RotMatrix(r.mat')
