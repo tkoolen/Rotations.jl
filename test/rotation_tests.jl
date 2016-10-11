@@ -65,14 +65,14 @@ end
 # build a full list of rotation types including the different angle ordering schemas
 #####################################################################################
 
-rot_types = (RotMatrix, Quat, SPQuat, AngleAxis, RodriguesVec,
+rot_types = (RotMatrix{3}, Quat, SPQuat, AngleAxis, RodriguesVec,
              RotXYZ, RotYZX, RotZXY, RotXZY, RotYXZ, RotZYX,
              RotXYX, RotYZY, RotZXZ, RotXZX, RotYXY, RotZYZ)
 
 one_types = (RotX, RotY, RotZ)
 two_types = (RotXY, RotYZ, RotZX, RotXZ, RotYX, RotZY)
 taitbyran_types = (RotXYZ, RotYZX, RotZXY, RotXZY, RotYXZ, RotZYX)
-all_types = (RotMatrix, Quat, SPQuat, AngleAxis, RodriguesVec,
+all_types = (RotMatrix{3}, Quat, SPQuat, AngleAxis, RodriguesVec,
              RotXYZ, RotYZX, RotZXY, RotXZY, RotYXZ, RotZYX,
              RotXYX, RotYZY, RotZXZ, RotXZX, RotYXY, RotZYZ,
              RotX, RotY, RotZ,
@@ -103,7 +103,7 @@ all_types = (RotMatrix, Quat, SPQuat, AngleAxis, RodriguesVec,
 
     @testset "Testing inverse()" begin
         repeats = 100
-        I = eye(RotMatrix{Float64})
+        I = eye(RotMatrix{3,Float64})
         @testset "$(R)" for R in all_types
             srand(0)
             for i = 1:repeats

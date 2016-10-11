@@ -124,7 +124,7 @@ using ForwardDiff
         # rotate a point by a RotMatrix
         @testset "Jacobian (RotMatrix rotation)" begin
             for i = 1:10    # do some repeats
-                r = rand(RotMatrix{Float64})    # a random quaternion
+                r = rand(RotMatrix{3,Float64})    # a random quaternion
                 v = randn(SVector{3,Float64})
 
                 # test jacobian to a Rotation matrix
