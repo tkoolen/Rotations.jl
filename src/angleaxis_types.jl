@@ -33,6 +33,32 @@ end
 @inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))
 @inline Base.getindex(aa::AngleAxis, i::Integer) = Quat(aa)[i]
 
+@inline function Base.convert{R <: RotMatrix}(::Type{R}, aa::AngleAxis)
+    # Rodrigues' rotation formula.
+    T = eltype(aa)
+
+    s = sin(aa.theta)
+    c = cos(aa.theta)
+    c1 = one(T) - c
+
+    c1x2 = c1 * aa.axis_x^2
+    c1y2 = c1 * aa.axis_y^2
+    c1z2 = c1 * aa.axis_z^2
+
+    c1xy = c1 * aa.axis_x * aa.axis_y
+    c1xz = c1 * aa.axis_x * aa.axis_z
+    c1yz = c1 * aa.axis_y * aa.axis_z
+
+    sx = s * aa.axis_x
+    sy = s * aa.axis_y
+    sz = s * aa.axis_z
+
+    # Note that the RotMatrix constructor argument order makes this look transposed:
+    R(one(T) - c1y2 - c1z2, c1xy + sz, c1xz - sy,
+      c1xy - sz, one(T) - c1x2 - c1z2, c1yz + sx,
+      c1xz + sy, c1yz - sx, one(T) - c1x2 - c1y2)
+end
+
 @inline function Base.convert{Q <: Quat}(::Type{Q}, aa::AngleAxis)
     qtheta = cos(aa.theta / 2)
     s = sin(aa.theta / 2) / sqrt(aa.axis_x * aa.axis_x + aa.axis_y * aa.axis_y + aa.axis_z * aa.axis_z)
