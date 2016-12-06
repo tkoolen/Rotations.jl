@@ -135,6 +135,7 @@ end
 @inline Base.getindex(aa::RodriguesVec, i::Integer) = Quat(aa)[i]
 
 # define its interaction with other angle representations
+@inline Base.convert{R <: RotMatrix}(::Type{R}, rv::RodriguesVec) = convert(R, AngleAxis(rv))
 
 function Base.convert{AA <: AngleAxis}(::Type{AA}, rv::RodriguesVec)
     # TODO: consider how to deal with derivative near theta = 0. There should be a first-order expansion here.
