@@ -29,6 +29,38 @@ end
 # but this isn't quite what we mean when we have 4 inputs (not 9).
 @inline (::Type{AngleAxis}){Θ,X,Y,Z}(θ::Θ, x::X, y::Y, z::Z) = AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z)
 
+"""
+    AngleAxis(from, to)
+
+Compute the AngleAxis rotation with smallest angle that rotates vector `from`
+to vector `to` (up to scaling).
+"""
+AngleAxis(from::AbstractVector, to::AbstractVector) = AngleAxis(SVector{3}(from), SVector{3}(to))
+function AngleAxis(from::SVector{3}, to::SVector{3})
+    normfrom = norm(from)
+    normto = norm(to)
+    normprod = normfrom * normto
+    T = typeof(normprod)
+    normprod < eps(T) && throw(ArgumentError("Input vectors must be nonzero."))
+    cosϕ = clamp(dot(from, to) / normprod, -one(T), one(T))
+    ϕ = acos(cosϕ)
+
+    return if ϕ < eps(T)
+         # 'from' and 'to' are aligned
+        eye(AngleAxis{Float64})
+    else
+        axis = cross(from, to)
+        if dot(axis, axis) < 10 * eps(T)^2
+            # 'from' and 'to' point in opposite directions.
+            # find axis that is perpendicular to 'from' and 'to'
+            maxnormvec = normfrom > normto ? from : to
+            axis = perpendicular_vector(maxnormvec)
+        end
+        # note: relies on normalization of axis in AngleAxis constructor:
+        AngleAxis(ϕ, axis[1], axis[2], axis[3])
+    end
+end
+
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))
 @inline Base.getindex(aa::AngleAxis, i::Integer) = Quat(aa)[i]

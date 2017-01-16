@@ -7,6 +7,7 @@ using StaticArrays
 
 import Base: convert, eltype, size, length, getindex, inv, *, Tuple, eye
 
+include("util.jl")
 include("core_types.jl")
 include("quaternion_types.jl")
 include("angleaxis_types.jl")
