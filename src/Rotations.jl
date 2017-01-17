@@ -7,6 +7,7 @@ using StaticArrays
 
 import Base: convert, eltype, size, length, getindex, inv, *, Tuple, eye
 
+include("util.jl")
 include("core_types.jl")
 include("quaternion_types.jl")
 include("angleaxis_types.jl")
@@ -29,7 +30,10 @@ export
 
     # angle and axis introspection
     rotation_angle,
-    rotation_axis
+    rotation_axis,
+
+    # quaternion from two vectors
+    rotation_between
 
     # derivatives (names clash with ForwarDiff?)
     #jacobian, hessian
