@@ -30,7 +30,10 @@ export
 
     # angle and axis introspection
     rotation_angle,
-    rotation_axis
+    rotation_axis,
+
+    # quaternion from two vectors
+    rotation_between
 
     # derivatives (names clash with ForwarDiff?)
     #jacobian, hessian
