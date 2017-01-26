@@ -6,7 +6,7 @@
 
 This package implements various 3D rotation parameterizations and defines
 conversions between them. At their heart, each rotation parameterization *is*
-a 3×3 unitary (orthogonal) matrix (based on the [StaticArrays.jl package](https://github,com/andyferris/StaticArrays.jl)),
+a 3×3 unitary (orthogonal) matrix (based on the [StaticArrays.jl package](https://github.com/andyferris/StaticArrays.jl)),
 and acts to rotate a 3-vector about the origin through matrix-vector multiplication.
 
 While the `RotMatrix` type is a dense representation of a `3×3` matrix, we also
