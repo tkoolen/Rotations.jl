@@ -23,10 +23,10 @@ or [AffineTransforms.jl](https://github.com/timholy/AffineTransforms.jl) package
 using Rotations, StaticArrays
 
 # create the null rotation (identity matrix)
-id = eye(RotMatrix{Float64})
+id = eye(RotMatrix{3, Float64})
 
 # create a random rotation matrix (uniformly distributed over all 3D rotations)
-r = rand(RotMatrix) # uses Float64 by default
+r = rand(RotMatrix{3}) # uses Float64 by default
 
 # create a point
 p = SVector(1.0, 2.0, 3.0) # from StaticArrays.jl, but could use any AbstractVector...
@@ -74,10 +74,10 @@ j2 = Rotations.jacobian(q, p) # How does the rotated point q*p change w.r.t. the
 
 ### Rotation Parameterizations
 
-1. **Rotation Matrix** `RotMatrix{T}`
+1. **Rotation Matrix** `RotMatrix{N, T}`
 
-    A 3 x 3 rotation matrix storing the rotation.  This is a simple wrapper for
-    a [StaticArrays](https://github.com/andyferris/StaticArrays.jl) `SMatrix{3,3,T}`.
+    An N x N rotation matrix storing the rotation.  This is a simple wrapper for
+    a [StaticArrays](https://github.com/andyferris/StaticArrays.jl) `SMatrix{N,N,T}`.
     A rotation matrix `R` should have the property `I = R * R'`, but this isn't
     enforced by the constructor. On the other hand, all the types below are
     guaranteed to be "proper" rotations for all input parameters (equivalently:
