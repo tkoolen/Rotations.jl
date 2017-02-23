@@ -6,10 +6,9 @@ unitary (orthogonal) `N`×`N` matrices.
 """
 abstract Rotation{N,T} <: StaticMatrix{T}
 
-Base.@pure Base.size{N}(::Type{Rotation{N}}) = (N,N)
-Base.@pure Base.size{N,T}(::Type{Rotation{N,T}}) = (N,N)
-Base.@pure Base.size{R<:Rotation}(::Type{R}) = size(supertype(R))
-size(r::Rotation) = size(typeof(r))
+Base.@pure StaticArrays.Size{N}(::Type{Rotation{N}}) = Size(N,N)
+Base.@pure StaticArrays.Size{N,T}(::Type{Rotation{N,T}}) = Size(N,N)
+Base.@pure StaticArrays.Size{R<:Rotation}(::Type{R}) = Size(supertype(R))
 Base.ctranspose(r::Rotation) = inv(r)
 Base.transpose{N,T<:Real}(r::Rotation{N,T}) = inv(r)
 
