@@ -1,10 +1,10 @@
 """
-    abstract Rotation{N,T} <: StaticMatrix{T}
+    abstract type Rotation{N,T} <: StaticMatrix{T}
 
 An abstract type representing `N`-dimensional rotations. More abstractly, they represent
 unitary (orthogonal) `N`×`N` matrices.
 """
-abstract Rotation{N,T} <: StaticMatrix{T}
+abstract type Rotation{N,T} <: StaticMatrix{T} end
 
 Base.@pure StaticArrays.Size{N}(::Type{Rotation{N}}) = Size(N,N)
 Base.@pure StaticArrays.Size{N,T}(::Type{Rotation{N,T}}) = Size(N,N)
