@@ -1,5 +1,5 @@
 """
-    Quat{T} <: Rotation{3,T}
+    struct Quat{T} <: Rotation{3,T}
     Quat(w, x, y, z)
 
 The `Quat` type is a 3×3 matrix representation of a normalized quaternion.
@@ -10,7 +10,7 @@ through matrix-vector multiplication.
 Note: the constructor will always renormalize the input so that the quaternion
 has length 1 (w² + x² + y² + z² = 1), and the rotation matrix is orthogonal.
 """
-immutable Quat{T} <: Rotation{3,T}
+struct Quat{T} <: Rotation{3,T}
     w::T
     x::T
     y::T
@@ -173,7 +173,7 @@ end
 ################################################################################
 ################################################################################
 """
-    immutable SPQuat{T} <: Rotation{3,T}
+    struct SPQuat{T} <: Rotation{3,T}
     SPQuat(x, y, z)
 
 An `SPQuat` is a 3D rotation matrix represented by the "stereographic projection" of a normalized quaternion (shortened to "SPQuat"), which is
@@ -193,7 +193,7 @@ See:
     Note 3: it is safe to assume that the corresponding matrix is orthogonal/unitary for any input x, y, z.
 
 """
-immutable SPQuat{T} <: Rotation{3,T}
+struct SPQuat{T} <: Rotation{3,T}
     x::T
     y::T
     z::T

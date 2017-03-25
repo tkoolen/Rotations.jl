@@ -67,13 +67,13 @@ end
 ################################################################################
 ################################################################################
 """
-    immutable RotMatrix{N,T} <: Rotation{N,T}
+    struct RotMatrix{N,T} <: Rotation{N,T}
 
 A statically-sized, N×N unitary (orthogonal) matrix.
 
 Note: the orthonormality of the input matrix is *not* checked by the constructor.
 """
-immutable RotMatrix{N,T,L} <: Rotation{N,T} # which is <: AbstractMatrix{T}
+struct RotMatrix{N,T,L} <: Rotation{N,T} # which is <: AbstractMatrix{T}
     mat::SMatrix{N, N, T, L} # The final parameter to SMatrix is the "length" of the matrix, 3 × 3 = 9
 end
 

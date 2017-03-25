@@ -1,7 +1,7 @@
 ################################################################################
 ################################################################################
 """
-    immutable AngleAxis{T} <: Rotation{3,T}
+    struct AngleAxis{T} <: Rotation{3,T}
     AngleAxis(Θ, x, y, z)
 
 A 3×3 rotation matrix parameterized by a 3D rotation by angle θ about an
@@ -11,7 +11,7 @@ Note that the axis is not unique for θ = 0, and that this parameterization does
 not continuously map the neighbourhood of the null rotation (and therefore
 might not be suitable for autodifferentation and optimization purposes).
 """
-immutable AngleAxis{T} <: Rotation{3,T}
+struct AngleAxis{T} <: Rotation{3,T}
     theta::T
     axis_x::T
     axis_y::T
@@ -113,14 +113,14 @@ end
 ################################################################################
 ################################################################################
 """
-    immutable RodriguesVec{T} <: Rotation{3,T}
+    struct RodriguesVec{T} <: Rotation{3,T}
     RodriguesVec(sx, sy, sz)
 
 Rodrigues vector parameterization of a 3×3 rotation matrix. The direction of the
 vector [sx, sy, sz] defines the axis of rotation, and the rotation angle is
 given by its norm.
 """
-immutable RodriguesVec{T} <: Rotation{3,T}
+struct RodriguesVec{T} <: Rotation{3,T}
     sx::T
     sy::T
     sz::T
