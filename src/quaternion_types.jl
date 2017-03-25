@@ -17,7 +17,7 @@ immutable Quat{T} <: Rotation{3,T}
     z::T
 
     # For the moment we ensure that it is normalized upon construction.
-    function Quat(w, x, y, z)
+    function Quat{T}(w, x, y, z) where T
         norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
         # Should this be an error or warning, if it isn't approximately normalized? E.g.:
         #if norm !≈ 1

@@ -18,7 +18,7 @@ immutable AngleAxis{T} <: Rotation{3,T}
     axis_z::T
 
     # Ensure axis is normalized
-    function AngleAxis(θ, x, y, z)
+    function AngleAxis{T}(θ, x, y, z) where T
         norm = sqrt(x*x + y*y + z*z)
         # Not sure what to do with theta?? Should it become theta * norm ?
         new(θ, x/norm, y/norm, z/norm)
