@@ -88,7 +88,7 @@ for N = 2:3
         @inline (::Type{RotMatrix{$N,T,$L}}){T}(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N,T}(t))
     end
 end
-Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Integer) = r.mat[i]
+Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Int) = r.mat[i]
 
 @inline (::Type{RotMatrix})(θ::Real) = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
 @inline (::Type{RotMatrix{2}})(θ::Real)      = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])

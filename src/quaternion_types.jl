@@ -39,7 +39,7 @@ function (::Type{Q}){Q<:Quat}(t::NTuple{9})
                copysign(sqrt(abs(1 - t[1] - t[5] + t[9]))/2, t[2] - t[4]))
 end
 
-function Base.getindex(q::Quat, i::Integer)
+function Base.getindex(q::Quat, i::Int)
     if i == 1
         ww = (q.w * q.w)
         xx = (q.x * q.x)
@@ -207,7 +207,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{SPQ}){SPQ <: SPQuat}(t::NTuple{9}) = SPQ(Quat(t))
-@inline Base.getindex(spq::SPQuat, i::Integer) = Quat(spq)[i]
+@inline Base.getindex(spq::SPQuat, i::Int) = Quat(spq)[i]
 
 @inline function Base.convert{Q <: Quat}(::Type{Q}, spq::SPQuat)
     # Both the sign and norm of the Quat is automatically dealt with in its inner constructor

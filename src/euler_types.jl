@@ -23,7 +23,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotX}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotX{T}, i::Int)
     T2 = Base.promote_op(sin, T)
     if i == 1
         one(T2)
@@ -85,7 +85,7 @@ end
 @inline convert{R<:RotY}(::Type{R}, r::RotY) = R(r.theta)
 
 @inline (::Type{R}){R<:RotY}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotY{T}, i::Int)
     T2 = Base.promote_op(sin, T)
     if i == 1
         cos(r.theta)
@@ -152,7 +152,7 @@ end
 @inline convert{R<:RotZ}(::Type{R}, r::RotZ) = R(r.theta)
 
 @inline (::Type{R}){R<:RotZ}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZ{T}, i::Int)
     T2 = Base.promote_op(sin, T)
     if i == 1
         cos(r.theta)
@@ -238,7 +238,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotXY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotXY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotXY{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -305,7 +305,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotYX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotYX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotYX{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -372,7 +372,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotXZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotXZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotXZ{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -439,7 +439,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotZX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotZX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZX{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -506,7 +506,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotZY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotZY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZY{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -574,7 +574,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotYZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotYZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotYZ{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -670,7 +670,7 @@ end
         atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1]),
         atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
 end
-@inline function Base.getindex{T}(r::RotXYX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotXYX{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -750,7 +750,7 @@ end
         atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1]),
         atan2(R[3, 2]*ct1 - R[2, 2]*st1, R[3, 3]*ct1 - R[2, 3]*st1))
 end
-@inline function Base.getindex{T}(r::RotXZX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotXZX{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -830,7 +830,7 @@ end
         atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2]),
         atan2(R[1, 3]*ct1 - R[3, 3]*st1, R[1, 1]*ct1 - R[3, 1]*st1))
 end
-@inline function Base.getindex{T}(r::RotYXY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotYXY{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -911,7 +911,7 @@ end
         atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2]),
         atan2(- R[3, 1]*ct1 - R[1, 1]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
 end
-@inline function Base.getindex{T}(r::RotYZY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotYZY{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -992,7 +992,7 @@ end
         atan2(- R[1, 2]*ct1 - R[2, 2]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotZXZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZXZ{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1073,7 +1073,7 @@ end
         atan2(R[2, 1]*ct1 - R[1, 1]*st1, R[2, 2]*ct1 - R[1, 2]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotZYZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZYZ{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1164,7 +1164,7 @@ end
         atan2(R[2, 1]*ct1 + R[3, 1]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotXYZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotXYZ{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1251,7 +1251,7 @@ end
         atan2(R[1, 3]*st1 - R[2, 3]*ct1, R[2, 2]*ct1 - R[1, 2]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotZYX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZYX{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1338,7 +1338,7 @@ end
         atan2(R[2, 1]*st1 - R[3, 1]*ct1, R[3, 3]*ct1 - R[2, 3]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotXZY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotXZY{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1425,7 +1425,7 @@ end
         atan2(R[3, 2]*ct1 + R[1, 2]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotYZX{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotYZX{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1512,7 +1512,7 @@ end
         atan2(R[3, 2]*st1 - R[1, 2]*ct1, R[1, 1]*ct1 - R[3, 1]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotYXZ{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotYXZ{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 
@@ -1599,7 +1599,7 @@ end
         atan2(R[1, 3]*ct1 + R[2, 3]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
 end
 
-@inline function Base.getindex{T}(r::RotZXY{T}, i::Integer)
+@inline function Base.getindex{T}(r::RotZXY{T}, i::Int)
     Tuple(r)[i] # Slow...
 end
 

@@ -31,7 +31,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))
-@inline Base.getindex(aa::AngleAxis, i::Integer) = Quat(aa)[i]
+@inline Base.getindex(aa::AngleAxis, i::Int) = Quat(aa)[i]
 
 @inline function Base.convert{R <: RotMatrix}(::Type{R}, aa::AngleAxis)
     # Rodrigues' rotation formula.
@@ -132,7 +132,7 @@ end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{RV}){RV <: RodriguesVec}(t::NTuple{9}) = RV(Quat(t))
-@inline Base.getindex(aa::RodriguesVec, i::Integer) = Quat(aa)[i]
+@inline Base.getindex(aa::RodriguesVec, i::Int) = Quat(aa)[i]
 
 # define its interaction with other angle representations
 @inline Base.convert{R <: RotMatrix}(::Type{R}, rv::RodriguesVec) = convert(R, AngleAxis(rv))
