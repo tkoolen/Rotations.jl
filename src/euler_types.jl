@@ -239,7 +239,7 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotXY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotXY{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXY{T})
@@ -306,7 +306,7 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotYX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotYX{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYX{T})
@@ -373,7 +373,7 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotXZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotXZ{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXZ{T})
@@ -440,7 +440,7 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotZX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZX{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZX{T})
@@ -507,7 +507,7 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotZY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZY{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZY{T})
@@ -575,7 +575,7 @@ end
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotYZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotYZ{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYZ{T})
@@ -671,7 +671,7 @@ end
         atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
 end
 @inline function Base.getindex{T}(r::RotXYX{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXYX{T})
@@ -751,7 +751,7 @@ end
         atan2(R[3, 2]*ct1 - R[2, 2]*st1, R[3, 3]*ct1 - R[2, 3]*st1))
 end
 @inline function Base.getindex{T}(r::RotXZX{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXZX{T})
@@ -831,7 +831,7 @@ end
         atan2(R[1, 3]*ct1 - R[3, 3]*st1, R[1, 1]*ct1 - R[3, 1]*st1))
 end
 @inline function Base.getindex{T}(r::RotYXY{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYXY{T})
@@ -912,7 +912,7 @@ end
         atan2(- R[3, 1]*ct1 - R[1, 1]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
 end
 @inline function Base.getindex{T}(r::RotYZY{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYZY{T})
@@ -993,7 +993,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotZXZ{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZXZ{T})
@@ -1074,7 +1074,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotZYZ{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZYZ{T})
@@ -1165,7 +1165,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotXYZ{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXYZ{T})
@@ -1252,7 +1252,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotZYX{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZYX{T})
@@ -1339,7 +1339,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotXZY{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXZY{T})
@@ -1426,7 +1426,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotYZX{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYZX{T})
@@ -1513,7 +1513,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotYXZ{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYXZ{T})
@@ -1600,7 +1600,7 @@ end
 end
 
 @inline function Base.getindex{T}(r::RotZXY{T}, i::Int)
-    Tuple(r)[i] # Slow...
+    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZXY{T})
