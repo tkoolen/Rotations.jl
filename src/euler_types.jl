@@ -16,10 +16,14 @@ A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
 """
 struct RotX{T} <: Rotation{3,T}
     theta::T
+    RotX{T}(theta) where {T} = new{T}(theta)
+    RotX{T}(r::RotX) where {T} = new{T}(r.theta)
 end
+@inline RotX(theta::T) where {T} = RotX{T}(theta)
+@inline RotX(r::RotX{T}) where {T} = RotX{T}(r)
 
-@inline convert{R<:RotX}(::Type{R}, r::RotX) = R(r.theta)
-
+@inline convert(::Type{R}, r::RotX) where {R<:RotX} = R(r.theta)
+@inline convert(::Type{R}, r::R) where {R<:RotX} = r
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{R}){R<:RotX}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
