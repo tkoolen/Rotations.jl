@@ -36,7 +36,8 @@ function jacobian(::Type{RotMatrix},  q::Quat)
     # then R = RotMatrix(q) = RotMatrix(s * qhat) = s * RotMatrix(qhat)
 
     # get R(q)
-    R = q[:]
+    # R = q[:] # FIXME: broken with StaticArrays 0.4.0 due to https://github.com/JuliaArrays/StaticArrays.jl/issues/128
+    R = SVector(convert(Tuple, q))
 
     # solve d(s*R)/dQ (because its easy)
     dsRdQ = @SMatrix [ 2*q.w   2*q.x   -2*q.y   -2*q.z ;
