@@ -50,7 +50,7 @@ end
     struct RotX{T} <: Rotation{3,T}
     RotX(theta)
 
-    A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
+A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
 """
 RotX
 
@@ -99,7 +99,7 @@ end
     struct RotY{T} <: Rotation{3,T}
     RotY(theta)
 
-    A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
+A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
 """
 RotY
 
@@ -152,7 +152,7 @@ end
     struct RotZ{T} <: Rotation{3,T}
     RotZ(theta)
 
-    A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
+A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
 """
 RotZ
 
