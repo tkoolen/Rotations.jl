@@ -8,25 +8,52 @@
 #########################
 # Single axis rotations #
 #########################
+
+for axis in [:X, :Y, :Z]
+    RotType = Symbol("Rot" * string(axis))
+    @eval begin
+        struct $RotType{T} <: Rotation{3,T}
+            theta::T
+            $RotType{T}(theta) where {T} = new{T}(theta)
+            $RotType{T}(r::$RotType) where {T} = new{T}(r.theta)
+        end
+
+        @inline $RotType(theta::T) where {T} = $RotType{T}(theta)
+        @inline $RotType(r::$RotType{T}) where {T} = $RotType{T}(r)
+
+        @inline convert(::Type{R}, r::$RotType) where {R<:$RotType} = R(r)
+        @inline convert(::Type{R}, r::R) where {R<:$RotType} = r
+
+        @inline (::Type{R}){R<:$RotType}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
+
+        @inline Base.:*(r1::$RotType, r2::$RotType) = $RotType(r1.theta + r2.theta)
+
+        @inline inv(r::$RotType) = $RotType(-r.theta)
+
+        # define null rotations for convenience
+        @inline eye(::Type{$RotType}) = $RotType(0.0)
+        @inline eye{T}(::Type{$RotType{T}}) = $RotType{T}(zero(T))
+    end
+end
+
+function Base.rand{R <: Union{RotX,RotY,RotZ}}(::Type{R})
+    T = eltype(R)
+    if T == Any
+        T = Float64
+    end
+
+    return R(2*pi*rand(T))
+end
+
+
 """
     struct RotX{T} <: Rotation{3,T}
     RotX(theta)
 
-A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
+    A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
 """
-struct RotX{T} <: Rotation{3,T}
-    theta::T
-    RotX{T}(theta) where {T} = new{T}(theta)
-    RotX{T}(r::RotX) where {T} = new{T}(r.theta)
-end
-@inline RotX(theta::T) where {T} = RotX{T}(theta)
-@inline RotX(r::RotX{T}) where {T} = RotX{T}(r)
+RotX
 
-@inline convert(::Type{R}, r::RotX) where {R<:RotX} = R(r.theta)
-@inline convert(::Type{R}, r::R) where {R<:RotX} = r
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotX}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotX{T}, i::Int)
     T2 = Base.promote_op(sin, T)
     if i == 1
@@ -67,28 +94,15 @@ end
                              v[3] * ct + v[2] * st)
 end
 
-@inline Base.:*(r1::RotX, r2::RotX) = RotX(r1.theta + r2.theta)
-
-@inline inv(r::RotX) = RotX(-r.theta)
-
-# define null rotations for convenience
-@inline eye(::Type{RotX}) = RotX(0.0)
-@inline eye{T}(::Type{RotX{T}}) = RotX{T}(zero(T))
-
 
 """
     struct RotY{T} <: Rotation{3,T}
     RotY(theta)
 
-A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
+    A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
 """
-struct RotY{T} <: Rotation{3,T}
-    theta::T
-end
+RotY
 
-@inline convert{R<:RotY}(::Type{R}, r::RotY) = R(r.theta)
-
-@inline (::Type{R}){R<:RotY}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotY{T}, i::Int)
     T2 = Base.promote_op(sin, T)
     if i == 1
@@ -133,29 +147,15 @@ end
                              v[3] * ct - v[1] * st)
 end
 
-@inline Base.:*(r1::RotY, r2::RotY) = RotY(r1.theta + r2.theta)
-
-@inline inv(r::RotY) = RotY(-r.theta)
-
-# define null rotations for convenience
-@inline eye(::Type{RotY}) = RotY(0.0)
-@inline eye{T}(::Type{RotY{T}}) = RotY{T}(zero(T))
-
 
 """
     struct RotZ{T} <: Rotation{3,T}
     RotZ(theta)
 
-
-A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
+    A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
 """
-struct RotZ{T} <: Rotation{3,T}
-    theta::T
-end
+RotZ
 
-@inline convert{R<:RotZ}(::Type{R}, r::RotZ) = R(r.theta)
-
-@inline (::Type{R}){R<:RotZ}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
 @inline function Base.getindex{T}(r::RotZ{T}, i::Int)
     T2 = Base.promote_op(sin, T)
     if i == 1
@@ -196,23 +196,6 @@ end
                              v[3])
 end
 
-@inline Base.:*(r1::RotZ, r2::RotZ) = RotZ(r1.theta + r2.theta)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZ}) = RotZ(0.0)
-@inline eye{T}(::Type{RotZ{T}}) = RotZ{T}(zero(T))
-
-@inline inv(r::RotZ) = RotZ(-r.theta)
-
-function Base.rand{R <: Union{RotX,RotY,RotZ}}(::Type{R})
-    T = eltype(R)
-    if T == Any
-        T = Float64
-    end
-
-    return R(2*pi*rand(T))
-end
-
 
 ################################################################################
 ################################################################################
@@ -221,6 +204,62 @@ end
 # Two axis rotations #
 ######################
 
+for axis1 in [:X, :Y, :Z]
+    Rot1Type = Symbol("Rot" * string(axis1))
+    for axis2 in filter(axis -> axis != axis1, [:X, :Y, :Z])
+        Rot2Type = Symbol("Rot" * string(axis2))
+        RotType = Symbol("Rot" * string(axis1) * string(axis2))
+        InvRotType = Symbol("Rot" * string(axis2) * string(axis1))
+
+        @eval begin
+            struct $RotType{T} <: Rotation{3,T}
+                theta1::T
+                theta2::T
+                $RotType{T}(theta1, theta2) where {T} = new{T}(theta1, theta2)
+                $RotType{T}(r::$RotType) where {T} = new{T}(r.theta1, r.theta2)
+            end
+
+            @inline $RotType(theta1::T1, theta2::T2) where {T1, T2} = $RotType{promote_type(T1, T2)}(theta1, theta2)
+            @inline $RotType(r::$RotType{T}) where {T} = $RotType{T}(r)
+
+            @inline convert(::Type{R}, r::$RotType) where {R<:$RotType} = R(r)
+            @inline convert(::Type{R}, r::R) where {R<:$RotType} = r
+
+            @inline function Base.getindex{T}(r::$RotType{T}, i::Int)
+                convert(Tuple, r)[i] # Slow...
+            end
+
+            @inline (::Type{R}){R<:$RotType}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+
+            # Composing single-axis rotations to obtain a two-axis rotation:
+            @inline Base.:*(r1::$Rot1Type, r2::$Rot2Type) = $RotType(r1.theta, r2.theta)
+
+            # Composing single-axis rotations with two-axis rotations:
+            @inline Base.:*(r1::$RotType, r2::$Rot2Type) = $RotType(r1.theta1, r1.theta2 + r2.theta)
+            @inline Base.:*(r1::$Rot1Type, r2::$RotType) = $RotType(r1.theta + r2.theta1, r2.theta2)
+
+            @inline inv(r::$RotType) = $InvRotType(-r.theta2, -r.theta1)
+
+            # define null rotations for convenience
+            @inline eye(::Type{$RotType}) = $RotType(0.0, 0.0)
+            @inline eye{T}(::Type{$RotType{T}}) = $RotType{T}(zero(T), zero(T))
+        end
+    end
+end
+
+function Base.rand{R <: Union{RotXY,RotYZ,RotZX, RotXZ, RotYX, RotZY}}(::Type{R})
+    T = eltype(R)
+    if T == Any
+        T = Float64
+    end
+
+    # Not really sure what this distribution is, but it's also not clear what
+    # it should be! rand(RotXY) *is* invariant to pre-rotations by a RotX and
+    # post-rotations by a RotY...
+    return R(2*pi*rand(T), 2*pi*rand(T))
+end
+
+
 """
     struct RotXY{T} <: Rotation{3,T}
     RotXY(theta_x, theta_y)
@@ -228,23 +267,7 @@ end
 A 3×3 rotation matrix which represents a rotation by `theta_y` about the Y axis,
 followed by a rotation by `theta_x` about the X axis.
 """
-struct RotXY{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-end
-
-@inline (::Type{R}){R<:RotXY}(r::RotXY) = R(r.theta1, r.theta2)
-@inline convert{R<:RotXY}(::Type{R}, r::RotXY) = R(r.theta1, r.theta2)
-
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 2 inputs (not 9).
-@inline (::Type{RotXY}){X,Y}(x::X, y::Y) = RotXY{promote_type(X, Y)}(x, y)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotXY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotXY{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
-end
+RotXY
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXY{T})
     sinθ₁ = sin(r.theta1)
@@ -277,16 +300,6 @@ end
                              cosθ₁*-sinθ₂*v[1] + sinθ₁*v[2] + cosθ₁*cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotX, r2::RotY) = RotXY(r1.theta, r2.theta)
-@inline Base.:*(r1::RotXY, r2::RotY) = RotXY(r1.theta1, r1.theta2 + r2.theta)
-@inline Base.:*(r1::RotX, r2::RotXY) = RotXY(r1.theta + r2.theta1, r2.theta2)
-
-@inline inv(r::RotXY) = RotYX(-r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotXY}) = RotXY(0.0, 0.0)
-@inline eye{T}(::Type{RotXY{T}}) = RotXY{T}(zero(T), zero(T))
-
 
 """
     struct RotYX{T} <: Rotation{3,T}
@@ -295,23 +308,7 @@ end
 A 3×3 rotation matrix which represents a rotation by `theta_x` about the X axis,
 followed by a rotation by `theta_y` about the Y axis.
 """
-struct RotYX{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-end
-
-@inline (::Type{R}){R<:RotYX}(r::RotYX) = R(r.theta1, r.theta2)
-@inline convert{R<:RotYX}(::Type{R}, r::RotYX) = R(r.theta1, r.theta2)
-
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 2 inputs (not 9).
-@inline (::Type{RotYX}){Y,X}(y::Y, x::X) = RotYX{promote_type(Y, X)}(y, x)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotYX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotYX{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
-end
+RotYX
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYX{T})
     sinθ₁ = sin(r.theta1)
@@ -344,16 +341,6 @@ end
                              -sinθ₁*v[1] + cosθ₁*sinθ₂*v[2] + cosθ₁*cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotY, r2::RotX) = RotYX(r1.theta, r2.theta)
-@inline Base.:*(r1::RotYX, r2::RotX) = RotYX(r1.theta1, r1.theta2 + r2.theta)
-@inline Base.:*(r1::RotY, r2::RotYX) = RotYX(r1.theta + r2.theta1, r2.theta2)
-
-@inline inv(r::RotYX) = RotXY(-r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotYX}) = RotYX(0.0, 0.0)
-@inline eye{T}(::Type{RotYX{T}}) = RotYX{T}(zero(T), zero(T))
-
 
 """
     struct RotXZ{T} <: Rotation{3,T}
@@ -362,23 +349,7 @@ end
 A 3×3 rotation matrix which represents a rotation by `theta_z` about the Z axis,
 followed by a rotation by `theta_x` about the X axis.
 """
-struct RotXZ{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-end
-
-@inline (::Type{R}){R<:RotXZ}(r::RotXZ) = R(r.theta1, r.theta2)
-@inline convert{R<:RotXZ}(::Type{R}, r::RotXZ) = R(r.theta1, r.theta2)
-
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 2 inputs (not 9).
-@inline (::Type{RotXZ}){X,Z}(x::X, z::Z) = RotXZ{promote_type(X, Z)}(x, z)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotXZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotXZ{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
-end
+RotXZ
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXZ{T})
     sinθ₁ = sin(r.theta1)
@@ -411,16 +382,6 @@ end
                              sinθ₁*sinθ₂*v[1] + sinθ₁*cosθ₂*v[2] + cosθ₁*v[3])
 end
 
-@inline Base.:*(r1::RotX, r2::RotZ) = RotXZ(r1.theta, r2.theta)
-@inline Base.:*(r1::RotXZ, r2::RotZ) = RotXZ(r1.theta1, r1.theta2 + r2.theta)
-@inline Base.:*(r1::RotX, r2::RotXZ) = RotXZ(r1.theta + r2.theta1, r2.theta2)
-
-@inline inv(r::RotXZ) = RotZX(-r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotXZ}) = RotXZ(0.0, 0.0)
-@inline eye{T}(::Type{RotXZ{T}}) = RotXZ{T}(zero(T), zero(T))
-
 
 """
     struct RotZX{T} <: Rotation{3,T}
@@ -429,23 +390,7 @@ end
 A 3×3 rotation matrix which represents a rotation by `theta_x` about the X axis,
 followed by a rotation by `theta_z` about the Z axis.
 """
-struct RotZX{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-end
-
-@inline (::Type{R}){R<:RotZX}(r::RotZX) = R(r.theta1, r.theta2)
-@inline convert{R<:RotZX}(::Type{R}, r::RotZX) = R(r.theta1, r.theta2)
-
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 2 inputs (not 9).
-@inline (::Type{RotZX}){Z,X}(z::Z, x::X) = RotZX{promote_type(Z, X)}(z, x)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotZX}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotZX{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
-end
+RotZX
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZX{T})
     sinθ₁ = sin(r.theta1)
@@ -478,16 +423,6 @@ end
                              sinθ₂*v[2] + cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotZ, r2::RotX) = RotZX(r1.theta, r2.theta)
-@inline Base.:*(r1::RotZX, r2::RotX) = RotZX(r1.theta1, r1.theta2 + r2.theta)
-@inline Base.:*(r1::RotZ, r2::RotZX) = RotZX(r1.theta + r2.theta1, r2.theta2)
-
-@inline inv(r::RotZX) = RotXZ(-r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZX}) = RotZX(0.0, 0.0)
-@inline eye{T}(::Type{RotZX{T}}) = RotZX{T}(zero(T), zero(T))
-
 
 """
     struct RotZY{T} <: Rotation{3,T}
@@ -496,23 +431,7 @@ end
 A 3×3 rotation matrix which represents a rotation by `theta_y` about the Y axis,
 followed by a rotation by `theta_z` about the Z axis.
 """
-struct RotZY{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-end
-
-@inline (::Type{R}){R<:RotZY}(r::RotZY) = R(r.theta1, r.theta2)
-@inline convert{R<:RotZY}(::Type{R}, r::RotZY) = R(r.theta1, r.theta2)
-
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 2 inputs (not 9).
-@inline (::Type{RotZY}){Z,Y}(z::Z, y::Y) = RotZY{promote_type(Z, Y)}(z, y)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotZY}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotZY{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
-end
+RotZY
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZY{T})
     sinθ₁ = sin(r.theta1)
@@ -546,17 +465,6 @@ end
 end
 
 
-@inline Base.:*(r1::RotZ, r2::RotY) = RotZY(r1.theta, r2.theta)
-@inline Base.:*(r1::RotZY, r2::RotY) = RotZY(r1.theta1, r1.theta2 + r2.theta)
-@inline Base.:*(r1::RotZ, r2::RotZY) = RotZY(r1.theta + r2.theta1, r2.theta2)
-
-@inline inv(r::RotZY) = RotYZ(-r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZY}) = RotZY(0.0, 0.0)
-@inline eye{T}(::Type{RotZY{T}}) = RotZY{T}(zero(T), zero(T))
-
-
 """
     struct RotYZ{T} <: Rotation{3,T}
     RotYZ(theta_y, theta_z)
@@ -564,23 +472,7 @@ end
 A 3×3 rotation matrix which represents a rotation by `theta_z` about the Z axis,
 followed by a rotation by `theta_y` about the Y axis.
 """
-struct RotYZ{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-end
-
-@inline (::Type{R}){R<:RotYZ}(r::RotYZ) = R(r.theta1, r.theta2)
-@inline convert{R<:RotYZ}(::Type{R}, r::RotYZ) = R(r.theta1, r.theta2)
-
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 2 inputs (not 9).
-@inline (::Type{RotYZ}){Y,Z}(y::Y, z::Z) = RotYZ{promote_type(Y, Z)}(y, z)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{R}){R<:RotYZ}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
-@inline function Base.getindex{T}(r::RotYZ{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
-end
+RotYZ
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYZ{T})
     sinθ₁ = sin(r.theta1)
@@ -613,26 +505,59 @@ end
                              -sinθ₁*cosθ₂*v[1] + sinθ₁*sinθ₂*v[2] + cosθ₁*v[3])
 end
 
-@inline Base.:*(r1::RotY, r2::RotZ) = RotYZ(r1.theta, r2.theta)
-@inline Base.:*(r1::RotYZ, r2::RotZ) = RotYZ(r1.theta1, r1.theta2 + r2.theta)
-@inline Base.:*(r1::RotY, r2::RotYZ) = RotYZ(r1.theta + r2.theta1, r2.theta2)
+################################################################################
+################################################################################
 
-# define null rotations for convenience
-@inline eye(::Type{RotYZ}) = RotYZ(0.0, 0.0)
-@inline eye{T}(::Type{RotYZ{T}}) = RotYZ{T}(zero(T), zero(T))
+########################
+# Three axis Rotations #
+########################
 
-@inline inv(r::RotYZ) = RotZY(-r.theta2, -r.theta1)
+for axis1 in [:X, :Y, :Z]
+    Rot1Type = Symbol("Rot" * string(axis1))
+    for axis2 in filter(axis -> axis != axis1, [:X, :Y, :Z])
+        Rot2Type = Symbol("Rot" * string(axis2))
+        Rot12Type = Symbol("Rot" * string(axis1) * string(axis2))
+        for axis3 in filter(axis -> axis != axis2, [:X, :Y, :Z])
+            Rot3Type = Symbol("Rot" * string(axis3))
+            Rot23Type = Symbol("Rot" * string(axis2) * string(axis3))
+            RotType = Symbol("Rot" * string(axis1) * string(axis2) * string(axis3))
+            InvRotType = Symbol("Rot" * string(axis3) * string(axis2) * string(axis1))
 
-function Base.rand{R <: Union{RotXY,RotYZ,RotZX, RotXZ, RotYX, RotZY}}(::Type{R})
-    T = eltype(R)
-    if T == Any
-        T = Float64
+            @eval begin
+                struct $RotType{T} <: Rotation{3,T}
+                    theta1::T
+                    theta2::T
+                    theta3::T
+                    $RotType{T}(theta1, theta2, theta3) where {T} = new{T}(theta1, theta2, theta3)
+                    $RotType{T}(r::$RotType) where {T} = new{T}(r.theta1, r.theta2, r.theta3)
+                end
+
+                @inline $RotType(theta1::T1, theta2::T2, theta3::T3) where {T1, T2, T3} = $RotType{promote_type(promote_type(T1, T2), T3)}(theta1, theta2, theta3)
+                @inline $RotType(r::$RotType{T}) where {T} = $RotType{T}(r)
+
+                @inline convert(::Type{R}, r::$RotType) where {R<:$RotType} = R(r)
+                @inline convert(::Type{R}, r::R) where {R<:$RotType} = r
+
+                @inline function Base.getindex{T}(r::$RotType{T}, i::Int)
+                    convert(Tuple, r)[i] # Slow...
+                end
+
+                # Composing single-axis rotations with two-axis rotations:
+                @inline Base.:*(r1::$Rot1Type, r2::$Rot23Type) = $RotType(r1.theta, r2.theta1, r2.theta2)
+                @inline Base.:*(r1::$Rot12Type, r2::$Rot3Type) = $RotType(r1.theta1, r1.theta2, r2.theta)
+
+                # Composing with single-axis rotations:
+                @inline Base.:*(r1::$RotType, r2::$Rot3Type) = $RotType(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
+                @inline Base.:*(r1::$Rot1Type, r2::$RotType) = $RotType(r1.theta + r2.theta1, r2.theta2, r2.theta3)
+
+                @inline inv(r::$RotType) = $InvRotType(-r.theta3, -r.theta2, -r.theta1)
+
+                # define null rotations for convenience
+                @inline eye(::Type{$RotType}) = $RotType(0.0, 0.0, 0.0)
+                @inline eye{T}(::Type{$RotType{T}}) = $RotType{T}(zero(T), zero(T), zero(T))
+            end
+        end
     end
-
-    # Not really sure what this distribution is, but it's also not clear what
-    # it should be! rand(RotXY) *is* invariant to pre-rotations by a RotX and
-    # post-rotations by a RotY...
-    return R(2*pi*rand(T), 2*pi*rand(T))
 end
 
 
@@ -652,18 +577,8 @@ consisting of first a rotation about the X axis by `theta3`, followed by a
 rotation about the Y axis by `theta2`, and finally a rotation about the X axis
 by `theta1`.
 """
-struct RotXYX{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotXYX
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotXYX}){X,Y,Z}(x::X, y::Y, z::Z) = RotXYX{promote_type(promote_type(X, Y), Z)}(x, y, z)
-
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotXYX}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -673,9 +588,6 @@ end
     Rot(t1,
         atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1]),
         atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
-end
-@inline function Base.getindex{T}(r::RotXYX{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXYX{T})
@@ -712,16 +624,6 @@ end
         cosθ₁*-sinθ₂*v[1] + (sinθ₁*cosθ₃ + cosθ₁*cosθ₂*sinθ₃)*v[2] + (sinθ₁*-sinθ₃ + cosθ₁*cosθ₂*cosθ₃)*v[3])
 end
 
-@inline Base.:*(r1::RotX, r2::RotYX) = RotXYX(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotXY, r2::RotX) = RotXYX(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotXYX, r2::RotX) = RotXYX(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotX, r2::RotXYX) = RotXYX(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotXYX) = RotXYX(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotXYX}) = RotXYX(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotXYX{T}}) = RotXYX{T}(zero(T), zero(T), zero(T))
 
 """
     struct RotXZX{T} <: Rotation{3,T}
@@ -732,18 +634,8 @@ consisting of first a rotation about the X axis by `theta3`, followed by a
 rotation about the Z axis by `theta2`, and finally a rotation about the X axis
 by `theta1`.
 """
-struct RotXZX{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotXZX
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotXZX}){X,Y,Z}(x::X, y::Y, z::Z) = RotXZX{promote_type(promote_type(X, Y), Z)}(x, y, z)
-
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotXZX}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -753,9 +645,6 @@ end
     Rot(t1,
         atan2((R[1, 2] * R[1, 2] + R[1, 3] * R[1, 3])^(1/2), R[1, 1]),
         atan2(R[3, 2]*ct1 - R[2, 2]*st1, R[3, 3]*ct1 - R[2, 3]*st1))
-end
-@inline function Base.getindex{T}(r::RotXZX{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXZX{T})
@@ -792,16 +681,6 @@ end
         sinθ₁*sinθ₂*v[1] + (sinθ₁*cosθ₂*cosθ₃ + cosθ₁*sinθ₃)*v[2] + (sinθ₁*cosθ₂*-sinθ₃ + cosθ₁*cosθ₃)*v[3])
 end
 
-@inline Base.:*(r1::RotX, r2::RotZX) = RotXZX(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotXZ, r2::RotX) = RotXZX(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotXZX, r2::RotX) = RotXZX(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotX, r2::RotXZX) = RotXZX(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotXZX) = RotXZX(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotXZX}) = RotXZX(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotXZX{T}}) = RotXZX{T}(zero(T), zero(T), zero(T))
 
 """
     struct RotYXY{T} <: Rotation{3,T}
@@ -812,18 +691,8 @@ consisting of first a rotation about the Y axis by `theta3`, followed by a
 rotation about the X axis by `theta2`, and finally a rotation about the Y axis
 by `theta1`.
 """
-struct RotYXY{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotYXY
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotYXY}){X,Y,Z}(x::X, y::Y, z::Z) = RotYXY{promote_type(promote_type(X, Y), Z)}(x, y, z)
-
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotYXY}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -833,9 +702,6 @@ end
     Rot(t1,
         atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2]),
         atan2(R[1, 3]*ct1 - R[3, 3]*st1, R[1, 1]*ct1 - R[3, 1]*st1))
-end
-@inline function Base.getindex{T}(r::RotYXY{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYXY{T})
@@ -872,17 +738,6 @@ end
         (-sinθ₁*cosθ₃ + cosθ₁*cosθ₂*-sinθ₃)*v[1] + cosθ₁*sinθ₂*v[2] + (-sinθ₁*sinθ₃ + cosθ₁*cosθ₂*cosθ₃)*v[3])
 end
 
-@inline Base.:*(r1::RotY, r2::RotXY) = RotYXY(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotYX, r2::RotY) = RotYXY(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotYXY, r2::RotY) = RotYXY(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotY, r2::RotYXY) = RotYXY(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotYXY) = RotYXY(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotYXY}) = RotYXY(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotYXY{T}}) = RotYXY{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotYZY{T} <: Rotation{3,T}
@@ -893,18 +748,8 @@ consisting of first a rotation about the Y axis by `theta3`, followed by a
 rotation about the Z axis by `theta2`, and finally a rotation about the Y axis
 by `theta1`.
 """
-struct RotYZY{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotYZY
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotYZY}){X,Y,Z}(x::X, y::Y, z::Z) = RotYZY{promote_type(promote_type(X, Y), Z)}(x, y, z)
-
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotYZY}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -914,9 +759,6 @@ end
     Rot(t1,
         atan2((R[2, 1] * R[2, 1] + R[2, 3] * R[2, 3])^(1/2), R[2, 2]),
         atan2(- R[3, 1]*ct1 - R[1, 1]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
-end
-@inline function Base.getindex{T}(r::RotYZY{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYZY{T})
@@ -953,17 +795,6 @@ end
         (-sinθ₁*cosθ₂*cosθ₃ + cosθ₁*-sinθ₃)*v[1] + sinθ₁*sinθ₂*v[2] + (-sinθ₁*cosθ₂*sinθ₃ + cosθ₁*cosθ₃)*v[3])
 end
 
-@inline Base.:*(r1::RotY, r2::RotZY) = RotYZY(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotYZ, r2::RotY) = RotYZY(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotYZY, r2::RotY) = RotYZY(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotY, r2::RotYZY) = RotYZY(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotYZY) = RotYZY(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotYZY}) = RotYZY(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotYZY{T}}) = RotYZY{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotZXZ{T} <: Rotation{3,T}
@@ -974,17 +805,8 @@ consisting of first a rotation about the Z axis by `theta3`, followed by a
 rotation about the X axis by `theta2`, and finally a rotation about the Z axis
 by `theta1`.
 """
-struct RotZXZ{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotZXZ
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotZXZ}){X,Y,Z}(x::X, y::Y, z::Z) = RotZXZ{promote_type(promote_type(X, Y), Z)}(x, y, z)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotZXZ}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -994,10 +816,6 @@ end
     Rot(t1,
         atan2((R[3, 1] * R[3, 1] + R[3, 2] * R[3, 2])^(1/2), R[3, 3]),
         atan2(- R[1, 2]*ct1 - R[2, 2]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotZXZ{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZXZ{T})
@@ -1034,17 +852,6 @@ end
          sinθ₂*sinθ₃*v[1] + sinθ₂*cosθ₃*v[2] + cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotZ, r2::RotXZ) = RotZXZ(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotZX, r2::RotZ) = RotZXZ(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotZXZ, r2::RotZ) = RotZXZ(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotZ, r2::RotZXZ) = RotZXZ(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotZXZ) = RotZXZ(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZXZ}) = RotZXZ(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotZXZ{T}}) = RotZXZ{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotZYZ{T} <: Rotation{3,T}
@@ -1055,17 +862,8 @@ consisting of first a rotation about the Z axis by `theta3`, followed by a
 rotation about the Y axis by `theta2`, and finally a rotation about the Z axis
 by `theta1`.
 """
-struct RotZYZ{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotZYZ
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotZYZ}){X,Y,Z}(x::X, y::Y, z::Z) = RotZYZ{promote_type(promote_type(X, Y), Z)}(x, y, z)
-
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotZYZ}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1075,10 +873,6 @@ end
     Rot(t1,
         atan2((R[3, 1] * R[3, 1] + R[3, 2] * R[3, 2])^(1/2), R[3, 3]),
         atan2(R[2, 1]*ct1 - R[1, 1]*st1, R[2, 2]*ct1 - R[1, 2]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotZYZ{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZYZ{T})
@@ -1115,18 +909,6 @@ end
         -sinθ₂*cosθ₃*v[1] + sinθ₂*sinθ₃*v[2] + cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotZ, r2::RotYZ) = RotZYZ(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotZY, r2::RotZ) = RotZYZ(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotZYZ, r2::RotZ) = RotZYZ(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotZ, r2::RotZYZ) = RotZYZ(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotZYZ) = RotZYZ(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZYZ}) = RotZYZ(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotZYZ{T}}) = RotZYZ{T}(zero(T), zero(T), zero(T))
-
-
 ###############################
 # Tait-Bryant Euler Rotations #
 ###############################
@@ -1145,18 +927,10 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in XYZ order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-struct RotXYZ{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotXYZ
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotXYZ}){X,Y,Z}(x::X, y::Y, z::Z) = RotXYZ{promote_type(promote_type(X, Y), Z)}(x, y, z)
 @inline (::Type{Rot}){Rot<:RotXYZ}(; roll=0, pitch=0, yaw=0) = Rot(roll, pitch, yaw)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotXYZ}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1166,10 +940,6 @@ end
     Rot(t1,
         atan2(R[1, 3], (R[1, 1] * R[1, 1] + R[1, 2] * R[1, 2])^(1/2)),
         atan2(R[2, 1]*ct1 + R[3, 1]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotXYZ{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXYZ{T})
@@ -1206,17 +976,6 @@ end
         (cosθ₁*-sinθ₂*cosθ₃ + sinθ₁*sinθ₃)*v[1] + (cosθ₁*sinθ₂*sinθ₃ + sinθ₁*cosθ₃)*v[2] + cosθ₁*cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotX, r2::RotYZ) = RotXYZ(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotXY, r2::RotZ) = RotXYZ(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotXYZ, r2::RotZ) = RotXYZ(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotX, r2::RotXYZ) = RotXYZ(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotXYZ) = RotZYX(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotXYZ}) = RotXYZ(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotXYZ{T}}) = RotXYZ{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotZYX{T} <: Rotation{3,T}
@@ -1232,18 +991,10 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in ZYX order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-struct RotZYX{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotZYX
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotZYX}){X,Y,Z}(x::X, y::Y, z::Z) = RotZYX{promote_type(promote_type(X, Y), Z)}(x, y, z)
 @inline (::Type{Rot}){Rot<:RotZYX}(; roll=0, pitch=0, yaw=0) = Rot(yaw, pitch, roll)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotZYX}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1253,10 +1004,6 @@ end
     Rot(t1,
         atan2(-R[3, 1], (R[3, 2] * R[3, 2] + R[3, 3] * R[3, 3])^(1/2)),
         atan2(R[1, 3]*st1 - R[2, 3]*ct1, R[2, 2]*ct1 - R[1, 2]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotZYX{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZYX{T})
@@ -1293,17 +1040,6 @@ end
         -sinθ₂*v[1] + cosθ₂*sinθ₃*v[2] + cosθ₂*cosθ₃*v[3])
 end
 
-@inline Base.:*(r1::RotZ, r2::RotYX) = RotZYX(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotZY, r2::RotX) = RotZYX(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotZYX, r2::RotX) = RotZYX(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotZ, r2::RotZYX) = RotZYX(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotZYX) = RotXYZ(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZYX}) = RotZYX(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotZYX{T}}) = RotZYX{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotXZY{T} <: Rotation{3,T}
@@ -1319,18 +1055,10 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in XZY order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-struct RotXZY{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotXZY
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotXZY}){X,Y,Z}(x::X, y::Y, z::Z) = RotXZY{promote_type(promote_type(X, Y), Z)}(x, y, z)
 @inline (::Type{Rot}){Rot<:RotXZY}(; roll=0, pitch=0, yaw=0) = Rot(roll, yaw, pitch)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotXZY}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1340,10 +1068,6 @@ end
     Rot(t1,
         atan2(-R[1, 2], (R[1, 1] * R[1, 1] + R[1, 3] * R[1, 3])^(1/2)),
         atan2(R[2, 1]*st1 - R[3, 1]*ct1, R[3, 3]*ct1 - R[2, 3]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotXZY{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotXZY{T})
@@ -1380,17 +1104,6 @@ end
         (sinθ₁*sinθ₂*cosθ₃ + cosθ₁*-sinθ₃)*v[1] + sinθ₁*cosθ₂*v[2] + (sinθ₁*sinθ₂*sinθ₃ + cosθ₁*cosθ₃)*v[3])
 end
 
-@inline Base.:*(r1::RotX, r2::RotZY) = RotXZY(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotXZ, r2::RotY) = RotXZY(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotXZY, r2::RotY) = RotXZY(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotX, r2::RotXZY) = RotXZY(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotXZY) = RotYZX(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotXZY}) = RotXZY(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotXZY{T}}) = RotXZY{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotYZX{T} <: Rotation{3,T}
@@ -1406,18 +1119,10 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in YZX order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-struct RotYZX{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotYZX
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotYZX}){X,Y,Z}(x::X, y::Y, z::Z) = RotYZX{promote_type(promote_type(X, Y), Z)}(x, y, z)
 @inline (::Type{Rot}){Rot<:RotYZX}(; roll=0, pitch=0, yaw=0) = Rot(pitch, yaw, roll)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotYZX}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1427,10 +1132,6 @@ end
     Rot(t1,
         atan2(R[2, 1], (R[2, 2] * R[2, 2] + R[2, 3] * R[2, 3])^(1/2)),
         atan2(R[3, 2]*ct1 + R[1, 2]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotYZX{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYZX{T})
@@ -1467,17 +1168,6 @@ end
         -sinθ₁*cosθ₂*v[1] + (sinθ₁*sinθ₂*cosθ₃ + cosθ₁*sinθ₃)*v[2] + (sinθ₁*sinθ₂*-sinθ₃ + cosθ₁*cosθ₃)*v[3])
 end
 
-@inline Base.:*(r1::RotY, r2::RotZX) = RotYZX(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotYZ, r2::RotX) = RotYZX(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotYZX, r2::RotX) = RotYZX(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotY, r2::RotYZX) = RotYZX(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotYZX) = RotXZY(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotYZX}) = RotYZX(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotYZX{T}}) = RotYZX{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotYXZ{T} <: Rotation{3,T}
@@ -1493,18 +1183,10 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in YXZ order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-struct RotYXZ{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotYXZ
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotYXZ}){X,Y,Z}(x::X, y::Y, z::Z) = RotYXZ{promote_type(promote_type(X, Y), Z)}(x, y, z)
 @inline (::Type{Rot}){Rot<:RotYXZ}(; roll=0, pitch=0, yaw=0) = Rot(pitch, roll, yaw)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotYXZ}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1514,10 +1196,6 @@ end
     Rot(t1,
         atan2(-R[2, 3], (R[2, 1] * R[2, 1] + R[2, 2] * R[2, 2])^(1/2)),
         atan2(R[3, 2]*st1 - R[1, 2]*ct1, R[1, 1]*ct1 - R[3, 1]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotYXZ{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotYXZ{T})
@@ -1554,17 +1232,6 @@ end
         (-sinθ₁*cosθ₃ + cosθ₁*sinθ₂*sinθ₃)*v[1] + (sinθ₁*sinθ₃ + cosθ₁*sinθ₂*cosθ₃)*v[2] + cosθ₁*cosθ₂*v[3])
 end
 
-@inline Base.:*(r1::RotY, r2::RotXZ) = RotYXZ(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotYX, r2::RotZ) = RotYXZ(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotYXZ, r2::RotZ) = RotYXZ(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotY, r2::RotYXZ) = RotYXZ(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotYXZ) = RotZXY(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotYXZ}) = RotYXZ(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotYXZ{T}}) = RotYXZ{T}(zero(T), zero(T), zero(T))
-
 
 """
     struct RotZXY{T} <: Rotation{3,T}
@@ -1580,18 +1247,10 @@ The keyword argument form applies roll, pitch and yaw to the X, Y and Z axes
 respectively, in ZXY order. (Because it is a right-handed coordinate system,
 note that positive pitch is heading in the negative Z axis).
 """
-struct RotZXY{T} <: Rotation{3,T}
-    theta1::T
-    theta2::T
-    theta3::T
-end
+RotZXY
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{RotZXY}){X,Y,Z}(x::X, y::Y, z::Z) = RotZXY{promote_type(promote_type(X, Y), Z)}(x, y, z)
 @inline (::Type{Rot}){Rot<:RotZXY}(; roll=0, pitch=0, yaw=0) = Rot(yaw, roll, pitch)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline function (::Type{Rot}){Rot <: RotZXY}(t::NTuple{9})
     R = SMatrix{3,3}(t)
 
@@ -1601,10 +1260,6 @@ end
     Rot(t1,
         atan2(R[3, 2], (R[3, 1] * R[3, 1] + R[3, 3] * R[3, 3])^(1/2)),
         atan2(R[1, 3]*ct1 + R[2, 3]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
-end
-
-@inline function Base.getindex{T}(r::RotZXY{T}, i::Int)
-    convert(Tuple, r)[i] # Slow...
 end
 
 @inline function Base.convert{T}(::Type{Tuple}, r::RotZXY{T})
@@ -1640,14 +1295,3 @@ end
         (sinθ₁*cosθ₃ + cosθ₁*-sinθ₂*-sinθ₃)*v[1] + cosθ₁*cosθ₂*v[2] + (sinθ₁*sinθ₃ + cosθ₁*-sinθ₂*cosθ₃)*v[3],
          cosθ₂*-sinθ₃*v[1] + sinθ₂*v[2] + cosθ₂*cosθ₃*v[3])
 end
-
-@inline Base.:*(r1::RotZ, r2::RotXY) = RotZXY(r1.theta, r2.theta1, r2.theta2)
-@inline Base.:*(r1::RotZX, r2::RotY) = RotZXY(r1.theta1, r1.theta2, r2.theta)
-@inline Base.:*(r1::RotZXY, r2::RotY) = RotZXY(r1.theta1, r1.theta2, r1.theta3 + r2.theta)
-@inline Base.:*(r1::RotZ, r2::RotZXY) = RotZXY(r1.theta + r2.theta1, r2.theta2, r2.theta3)
-
-@inline inv(r::RotZXY) = RotYXZ(-r.theta3, -r.theta2, -r.theta1)
-
-# define null rotations for convenience
-@inline eye(::Type{RotZXY}) = RotZXY(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RotZXY{T}}) = RotZXY{T}(zero(T), zero(T), zero(T))
