@@ -1,6 +1,6 @@
 module SimpleSymbolic
 
-immutable S
+struct S
     x::Any
 end
 

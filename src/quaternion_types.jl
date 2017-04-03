@@ -1,5 +1,5 @@
 """
-    Quat{T} <: Rotation{3,T}
+    struct Quat{T} <: Rotation{3,T}
     Quat(w, x, y, z)
 
 The `Quat` type is a 3×3 matrix representation of a normalized quaternion.
@@ -10,26 +10,30 @@ through matrix-vector multiplication.
 Note: the constructor will always renormalize the input so that the quaternion
 has length 1 (w² + x² + y² + z² = 1), and the rotation matrix is orthogonal.
 """
-immutable Quat{T} <: Rotation{3,T}
+struct Quat{T} <: Rotation{3,T}
     w::T
     x::T
     y::T
     z::T
 
     # For the moment we ensure that it is normalized upon construction.
-    function Quat(w, x, y, z)
+    function Quat{T}(w, x, y, z) where T
         norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
         # Should this be an error or warning, if it isn't approximately normalized? E.g.:
         #if norm !≈ 1
         #    error("Expected a normalized quaternion") # or warn() ?
         #end
-        new(w/norm, x/norm, y/norm, z/norm)
+        new{T}(w/norm, x/norm, y/norm, z/norm)
     end
+
+    Quat{T}(q::Quat) where {T} = new{T}(q.w, q.x, q.y, q.z)
 end
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 4 inputs (not 9).
-@inline (::Type{Quat}){W,X,Y,Z}(w::W, x::X, y::Y, z::Z) = Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z)
+@inline Quat(w::W, x::X, y::Y, z::Z) where {W, X, Y, Z} = Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z)
+@inline Quat(q::Quat{T}) where {T} = Quat{T}(q)
+
+@inline convert(::Type{Q}, q::Quat) where {Q<:Quat} = Q(q)
+@inline convert(::Type{Q}, q::Q) where {Q<:Quat} = q
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 function (::Type{Q}){Q<:Quat}(t::NTuple{9})
@@ -39,7 +43,7 @@ function (::Type{Q}){Q<:Quat}(t::NTuple{9})
                copysign(sqrt(abs(1 - t[1] - t[5] + t[9]))/2, t[2] - t[4]))
 end
 
-function Base.getindex(q::Quat, i::Integer)
+function Base.getindex(q::Quat, i::Int)
     if i == 1
         ww = (q.w * q.w)
         xx = (q.x * q.x)
@@ -173,7 +177,7 @@ end
 ################################################################################
 ################################################################################
 """
-    immutable SPQuat{T} <: Rotation{3,T}
+    struct SPQuat{T} <: Rotation{3,T}
     SPQuat(x, y, z)
 
 An `SPQuat` is a 3D rotation matrix represented by the "stereographic projection" of a normalized quaternion (shortened to "SPQuat"), which is
@@ -193,21 +197,25 @@ See:
     Note 3: it is safe to assume that the corresponding matrix is orthogonal/unitary for any input x, y, z.
 
 """
-immutable SPQuat{T} <: Rotation{3,T}
+struct SPQuat{T} <: Rotation{3,T}
     x::T
     y::T
     z::T
 
     # TODO should we enforce norm <= 1?
+    SPQuat{T}(x, y, z) where {T} = new{T}(x, y, z)
+    SPQuat{T}(spq::SPQuat) where {T} = new{T}(spq.x, spq.y, spq.z)
 end
 
-# StaticArrays will take over *all* the constructors and put everything in a tuple...
-# but this isn't quite what we mean when we have 3 inputs (not 9).
-@inline (::Type{SPQuat}){X,Y,Z}(x::X, y::Y, z::Z) = SPQuat{promote_type(promote_type(X, Y), Z)}(x, y, z)
+@inline SPQuat(x::X, y::Y, z::Z) where {X,Y,Z} = SPQuat{promote_type(promote_type(X, Y), Z)}(x, y, z)
+@inline SPQuat(spq::SPQuat{T}) where {T} = SPQuat{T}(spq)
+
+@inline convert(::Type{SPQ}, spq::SPQuat) where {SPQ<:SPQuat} = SPQ(spq)
+@inline convert(::Type{SPQ}, spq::SPQ) where {SPQ<:SPQuat} = spq
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{SPQ}){SPQ <: SPQuat}(t::NTuple{9}) = SPQ(Quat(t))
-@inline Base.getindex(spq::SPQuat, i::Integer) = Quat(spq)[i]
+@inline Base.getindex(spq::SPQuat, i::Int) = Quat(spq)[i]
 
 @inline function Base.convert{Q <: Quat}(::Type{Q}, spq::SPQuat)
     # Both the sign and norm of the Quat is automatically dealt with in its inner constructor

@@ -117,7 +117,7 @@ using Rotations, StaticArrays, Base.Test
         io = IOBuffer()
         r = rand(RotMatrix{2})
         show(io, MIME("text/plain"), r)
-        str = takebuf_string(io)
+        str = String(take!(io))
         @test startswith(str, "2×2 RotMatrix{Float64}:")
     end
 end

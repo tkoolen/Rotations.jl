@@ -1,10 +1,10 @@
 """
-    abstract Rotation{N,T} <: StaticMatrix{T}
+    abstract type Rotation{N,T} <: StaticMatrix{T}
 
 An abstract type representing `N`-dimensional rotations. More abstractly, they represent
 unitary (orthogonal) `N`×`N` matrices.
 """
-abstract Rotation{N,T} <: StaticMatrix{T}
+abstract type Rotation{N,T} <: StaticMatrix{T} end
 
 Base.@pure StaticArrays.Size{N}(::Type{Rotation{N}}) = Size(N,N)
 Base.@pure StaticArrays.Size{N,T}(::Type{Rotation{N,T}}) = Size(N,N)
@@ -67,15 +67,17 @@ end
 ################################################################################
 ################################################################################
 """
-    immutable RotMatrix{N,T} <: Rotation{N,T}
+    struct RotMatrix{N,T} <: Rotation{N,T}
 
 A statically-sized, N×N unitary (orthogonal) matrix.
 
 Note: the orthonormality of the input matrix is *not* checked by the constructor.
 """
-immutable RotMatrix{N,T,L} <: Rotation{N,T} # which is <: AbstractMatrix{T}
+struct RotMatrix{N,T,L} <: Rotation{N,T} # which is <: AbstractMatrix{T}
     mat::SMatrix{N, N, T, L} # The final parameter to SMatrix is the "length" of the matrix, 3 × 3 = 9
+    RotMatrix{N,T,L}(x::AbstractArray) where {N,T,L} = new{N,T,L}(convert(SMatrix{N,N,T,L}, x))
 end
+RotMatrix(x::SMatrix{N,N,T,L}) where {N,T,L} = RotMatrix{N,T,L}(x)
 
 # These functions (plus size) are enough to satisfy the entire StaticArrays interface:
 # @inline (::Type{R}){R<:RotMatrix}(t::Tuple)  = error("No precise constructor found. Length of input was $(length(t)).")
@@ -88,7 +90,7 @@ for N = 2:3
         @inline (::Type{RotMatrix{$N,T,$L}}){T}(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N,T}(t))
     end
 end
-Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Integer) = r.mat[i]
+Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Int) = r.mat[i]
 
 @inline (::Type{RotMatrix})(θ::Real) = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
 @inline (::Type{RotMatrix{2}})(θ::Real)      = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
