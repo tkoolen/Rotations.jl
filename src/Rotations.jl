@@ -17,7 +17,7 @@ include("derivatives.jl")
 
 
 export
-    Rotation, RotMatrix,
+    Rotation, RotMatrix, RotMatrix2, RotMatrix3,
     Quat, SPQuat,
     AngleAxis, RodriguesVec,
     RotX, RotY, RotZ,

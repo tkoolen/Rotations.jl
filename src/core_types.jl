@@ -83,11 +83,13 @@ RotMatrix(x::SMatrix{N,N,T,L}) where {N,T,L} = RotMatrix{N,T,L}(x)
 # @inline (::Type{R}){R<:RotMatrix}(t::Tuple)  = error("No precise constructor found. Length of input was $(length(t)).")
 for N = 2:3
     L = N*N
+    RotMatrixN = Symbol(:RotMatrix, N)
     @eval begin
         @inline (::Type{RotMatrix})(t::NTuple{$L})  = RotMatrix(SMatrix{$N,$N}(t))
         @inline (::Type{RotMatrix{$N}})(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N}(t))
         @inline (::Type{RotMatrix{$N,T}}){T}(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N,T}(t))
         @inline (::Type{RotMatrix{$N,T,$L}}){T}(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N,T}(t))
+        const $RotMatrixN{T} = RotMatrix{$N, T, $L}
     end
 end
 Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Int) = r.mat[i]
