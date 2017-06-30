@@ -261,4 +261,9 @@ all_types = (RotMatrix{3}, Quat, SPQuat, AngleAxis, RodriguesVec,
             end
         end
     end
+
+    @testset "Testing type aliases" begin
+        @test eye(RotMatrix{2, Float64}) isa RotMatrix2{Float64}
+        @test eye(RotMatrix{3, Float64}) isa RotMatrix3{Float64}
+    end
 end
