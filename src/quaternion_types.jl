@@ -10,7 +10,7 @@ through matrix-vector multiplication.
 Note: by default, the constructor will renormalize the input so that the quaternion
 has length 1 (w² + x² + y² + z² = 1), and the rotation matrix is orthogonal.
 
-Renormalization can be skipped by passing `Val{false}()` as an additional constructor
+Renormalization can be skipped by passing `false` as an additional constructor
 argument, in which case the user provides the guarantee that the input arguments
 represent a unit quaternion. Operations on an unnormalized `Quat`, created by
 skipping renormalization in this fashion, are not guaranteed to do anything sensible.
@@ -21,8 +21,8 @@ struct Quat{T} <: Rotation{3,T}
     y::T
     z::T
 
-    @inline function Quat{T}(w, x, y, z, ::Val{Normalize} = Val{true}()) where {T, Normalize}
-        if Normalize
+    @inline function Quat{T}(w, x, y, z, normalize::Bool = true) where {T}
+        if normalize
             norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
             new(w/norm, x/norm, y/norm, z/norm)
         else
@@ -33,7 +33,7 @@ struct Quat{T} <: Rotation{3,T}
     Quat{T}(q::Quat) where {T} = new{T}(q.w, q.x, q.y, q.z)
 end
 
-@inline function Quat(w::W, x::X, y::Y, z::Z, normalize::Val = Val{true}()) where {W, X, Y, Z}
+@inline function Quat(w::W, x::X, y::Y, z::Z, normalize::Bool = true) where {W, X, Y, Z}
     Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z, normalize)
 end
 @inline Quat(q::Quat{T}) where {T} = Quat{T}(q)

@@ -14,7 +14,7 @@ might not be suitable for autodifferentation and optimization purposes).
 Note: by default, the constructor will renormalize the input so that the axis
 has length 1 (x² + y² + z² = 1).
 
-Renormalization can be skipped by passing `Val{false}()` as an additional constructor
+Renormalization can be skipped by passing `false` as an additional constructor
 argument, in which case the user provides the guarantee that the input arguments
 represent a normalized rotation axis. Operations on an `AngleAxis` with a rotation
 axis that does not have unit norm, created by skipping renormalization in this fashion,
@@ -26,8 +26,8 @@ struct AngleAxis{T} <: Rotation{3,T}
     axis_y::T
     axis_z::T
 
-    @inline function AngleAxis{T}(θ, x, y, z, ::Val{Normalize} = Val{true}()) where {T, Normalize}
-        if Normalize
+    @inline function AngleAxis{T}(θ, x, y, z, normalize::Bool = true) where {T}
+        if normalize
             # Not sure what to do with theta?? Should it become theta * norm ?
             norm = sqrt(x*x + y*y + z*z)
             new(θ, x/norm, y/norm, z/norm)
@@ -39,7 +39,7 @@ end
 
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 4 inputs (not 9).
-@inline function AngleAxis(θ::Θ, x::X, y::Y, z::Z, normalize::Val = Val{true}()) where {Θ,X,Y,Z}
+@inline function AngleAxis(θ::Θ, x::X, y::Y, z::Z, normalize::Bool = true) where {Θ,X,Y,Z}
     AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z, normalize)
 end
 

@@ -271,13 +271,13 @@ all_types = (RotMatrix{3}, Quat, SPQuat, AngleAxis, RodriguesVec,
         θ, x, y, z = 1., 2., 3., 4.
         aa = AngleAxis(θ, x, y, z)
         @test norm([aa.axis_x, aa.axis_y, aa.axis_z]) ≈ 1.
-        aa = AngleAxis(θ, x, y, z, Val{false}())
+        aa = AngleAxis(θ, x, y, z, false)
         @test norm([aa.axis_x, aa.axis_y, aa.axis_z]) ≈ norm([x, y, z])
 
         w, x, y, z = 1., 2., 3., 4.
         quat = Quat(w, x, y, z)
         @test norm([quat.w, quat.x, quat.y, quat.z]) ≈ 1.
-        quat = Quat(w, x, y, z, Val{false}())
+        quat = Quat(w, x, y, z, false)
         @test norm([quat.w, quat.x, quat.y, quat.z]) ≈ norm([w, x, y, z])
     end
 end
