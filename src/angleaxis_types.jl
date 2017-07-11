@@ -10,6 +10,15 @@ arbitrary axis `[x, y, z]`.
 Note that the axis is not unique for θ = 0, and that this parameterization does
 not continuously map the neighbourhood of the null rotation (and therefore
 might not be suitable for autodifferentation and optimization purposes).
+
+Note: by default, the constructor will renormalize the input so that the axis
+has length 1 (x² + y² + z² = 1).
+
+Renormalization can be skipped by passing `Val{false}()` as an additional constructor
+argument, in which case the user provides the guarantee that the input arguments
+represent a normalized rotation axis. Operations on an `AngleAxis` with a rotation
+axis that does not have unit norm, created by skipping renormalization in this fashion,
+are not guaranteed to do anything sensible.
 """
 struct AngleAxis{T} <: Rotation{3,T}
     theta::T
@@ -17,17 +26,22 @@ struct AngleAxis{T} <: Rotation{3,T}
     axis_y::T
     axis_z::T
 
-    # Ensure axis is normalized
-    function AngleAxis{T}(θ, x, y, z) where T
-        norm = sqrt(x*x + y*y + z*z)
-        # Not sure what to do with theta?? Should it become theta * norm ?
-        new(θ, x/norm, y/norm, z/norm)
+    @inline function AngleAxis{T}(θ, x, y, z, ::Val{Normalize} = Val{true}()) where {T, Normalize}
+        if Normalize
+            # Not sure what to do with theta?? Should it become theta * norm ?
+            norm = sqrt(x*x + y*y + z*z)
+            new(θ, x/norm, y/norm, z/norm)
+        else
+            new(θ, x, y, z)
+        end
     end
 end
 
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 4 inputs (not 9).
-@inline (::Type{AngleAxis}){Θ,X,Y,Z}(θ::Θ, x::X, y::Y, z::Z) = AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z)
+@inline function AngleAxis(θ::Θ, x::X, y::Y, z::Z, normalize::Val = Val{true}()) where {Θ,X,Y,Z}
+    AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z, normalize)
+end
 
 # These 2 functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))

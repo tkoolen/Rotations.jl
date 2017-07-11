@@ -266,4 +266,18 @@ all_types = (RotMatrix{3}, Quat, SPQuat, AngleAxis, RodriguesVec,
         @test eye(RotMatrix{2, Float64}) isa RotMatrix2{Float64}
         @test eye(RotMatrix{3, Float64}) isa RotMatrix3{Float64}
     end
+
+    @testset "Testing normalization" begin
+        θ, x, y, z = 1., 2., 3., 4.
+        aa = AngleAxis(θ, x, y, z)
+        @test norm([aa.axis_x, aa.axis_y, aa.axis_z]) ≈ 1.
+        aa = AngleAxis(θ, x, y, z, Val{false}())
+        @test norm([aa.axis_x, aa.axis_y, aa.axis_z]) ≈ norm([x, y, z])
+
+        w, x, y, z = 1., 2., 3., 4.
+        quat = Quat(w, x, y, z)
+        @test norm([quat.w, quat.x, quat.y, quat.z]) ≈ 1.
+        quat = Quat(w, x, y, z, Val{false}())
+        @test norm([quat.w, quat.x, quat.y, quat.z]) ≈ norm([w, x, y, z])
+    end
 end

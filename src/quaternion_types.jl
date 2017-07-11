@@ -7,8 +7,13 @@ They allow you to transparently use (fast) quaternion algebra to store, compose
 and invert 3D rotations, while at the same time letting you apply rotations
 through matrix-vector multiplication.
 
-Note: the constructor will always renormalize the input so that the quaternion
+Note: by default, the constructor will renormalize the input so that the quaternion
 has length 1 (w² + x² + y² + z² = 1), and the rotation matrix is orthogonal.
+
+Renormalization can be skipped by passing `Val{false}()` as an additional constructor
+argument, in which case the user provides the guarantee that the input arguments
+represent a unit quaternion. Operations on an unnormalized `Quat`, created by
+skipping renormalization in this fashion, are not guaranteed to do anything sensible.
 """
 struct Quat{T} <: Rotation{3,T}
     w::T
@@ -16,20 +21,21 @@ struct Quat{T} <: Rotation{3,T}
     y::T
     z::T
 
-    # For the moment we ensure that it is normalized upon construction.
-    function Quat{T}(w, x, y, z) where T
-        norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
-        # Should this be an error or warning, if it isn't approximately normalized? E.g.:
-        #if norm !≈ 1
-        #    error("Expected a normalized quaternion") # or warn() ?
-        #end
-        new{T}(w/norm, x/norm, y/norm, z/norm)
+    @inline function Quat{T}(w, x, y, z, ::Val{Normalize} = Val{true}()) where {T, Normalize}
+        if Normalize
+            norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
+            new(w/norm, x/norm, y/norm, z/norm)
+        else
+            new(w, x, y, z)
+        end
     end
 
     Quat{T}(q::Quat) where {T} = new{T}(q.w, q.x, q.y, q.z)
 end
 
-@inline Quat(w::W, x::X, y::Y, z::Z) where {W, X, Y, Z} = Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z)
+@inline function Quat(w::W, x::X, y::Y, z::Z, normalize::Val = Val{true}()) where {W, X, Y, Z}
+    Quat{promote_type(promote_type(promote_type(W, X), Y), Z)}(w, x, y, z, normalize)
+end
 @inline Quat(q::Quat{T}) where {T} = Quat{T}(q)
 
 @inline convert(::Type{Q}, q::Quat) where {Q<:Quat} = Q(q)
