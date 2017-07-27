@@ -280,4 +280,9 @@ all_types = (RotMatrix{3}, Quat, SPQuat, AngleAxis, RodriguesVec,
         quat = Quat(w, x, y, z, false)
         @test norm([quat.w, quat.x, quat.y, quat.z]) ≈ norm([w, x, y, z])
     end
+
+    @testset "Testing RotMatrix conversion to Tuple" begin
+        rot = eye(RotMatrix{3, Float64})
+        @inferred Tuple(rot)
+    end
 end

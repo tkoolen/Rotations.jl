@@ -93,11 +93,11 @@ for N = 2:3
     end
 end
 Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Int) = r.mat[i]
+@inline Tuple(r::RotMatrix) = Tuple(r.mat)
 
 @inline (::Type{RotMatrix})(θ::Real) = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
 @inline (::Type{RotMatrix{2}})(θ::Real)      = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
 @inline (::Type{RotMatrix{2,T}}){T}(θ::Real) = RotMatrix(@SMatrix T[cos(θ) -sin(θ); sin(θ) cos(θ)])
-@inline Tuple(r::RotMatrix) = Tuple(r.mat)
 
 # A rotation is more-or-less defined as being an orthogonal (or unitary) matrix
 Base.inv(r::RotMatrix) = RotMatrix(r.mat')
