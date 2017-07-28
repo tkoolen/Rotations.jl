@@ -13,3 +13,5 @@ include("util_tests.jl")
 include("2d.jl")
 include("rotation_tests.jl")
 include("derivative_tests.jl")
+
+include(joinpath("..", "perf", "runbenchmarks.jl"))
