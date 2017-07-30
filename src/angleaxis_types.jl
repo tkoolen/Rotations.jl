@@ -174,13 +174,9 @@ end
 
 function Base.convert{RV <: RodriguesVec}(::Type{RV}, q::Quat)
     s2 = q.x*q.x + q.y*q.y + q.z*q.z
-    if (s2 > 0)
-        cos_t2 = sqrt(s2)
-        theta = 2 * atan2(cos_t2, q.w)
-        sc = theta / cos_t2
-    else
-        sc = 2                 # N.B. the 2 "should" match the derivitive as cos_t2 -> 0
-    end
+    cos_t2 = sqrt(s2)
+    theta = 2 * atan2(cos_t2, q.w)
+    sc = ifelse(cos_t2 > 0, promote(theta / cos_t2, 2)...) # N.B. the 2 "should" match the derivitive as cos_t2 -> 0
     return RV(sc * q.x, sc * q.y, sc * q.z )
 end
 
