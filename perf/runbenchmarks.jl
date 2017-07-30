@@ -10,9 +10,11 @@ srand(1)
 suite["conversions"] = BenchmarkGroup()
 rotationtypes = (RotMatrix3{T}, Quat{T}, SPQuat{T}, AngleAxis{T}, RodriguesVec{T})
 for (from, to) in product(rotationtypes, rotationtypes)
-    name = "$(string(from)) -> $(string(to))"
-    # use eval here because of https://github.com/JuliaCI/BenchmarkTools.jl/issues/50#issuecomment-318673288
-    suite["conversions"][name] = eval(:(@benchmarkable convert($to, rot) setup = rot = rand($from)))
+    if from != to
+        name = "$(string(from)) -> $(string(to))"
+        # use eval here because of https://github.com/JuliaCI/BenchmarkTools.jl/issues/50#issuecomment-318673288
+        suite["conversions"][name] = eval(:(@benchmarkable convert($to, rot) setup = rot = rand($from)))
+    end
 end
 
 paramspath = joinpath(dirname(@__FILE__), "benchmarkparams.jld")
