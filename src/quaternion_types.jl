@@ -41,7 +41,7 @@ end
 @inline convert(::Type{Q}, q::Quat) where {Q<:Quat} = Q(q)
 @inline convert(::Type{Q}, q::Q) where {Q<:Quat} = q
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
+# These 3 functions are enough to satisfy the entire StaticArrays interface:
 function (::Type{Q}){Q<:Quat}(t::NTuple{9})
     q = Q(sqrt(abs(1  + t[1] + t[5] + t[9])) / 2,
                copysign(sqrt(abs(1 + t[1] - t[5] - t[9]))/2, t[6] - t[8]),
@@ -106,8 +106,7 @@ function Base.getindex(q::Quat, i::Int)
     end
 end
 
-# This speeds up some StaticArray methods (such as conversion to RotMatrix)
-function Base.convert(::Type{Tuple}, q::Quat)
+function Tuple(q::Quat)
     ww = (q.w * q.w)
     xx = (q.x * q.x)
     yy = (q.y * q.y)
@@ -219,9 +218,10 @@ end
 @inline convert(::Type{SPQ}, spq::SPQuat) where {SPQ<:SPQuat} = SPQ(spq)
 @inline convert(::Type{SPQ}, spq::SPQ) where {SPQ<:SPQuat} = spq
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
+# These functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{SPQ}){SPQ <: SPQuat}(t::NTuple{9}) = SPQ(Quat(t))
 @inline Base.getindex(spq::SPQuat, i::Int) = Quat(spq)[i]
+@inline Tuple(spq::SPQuat) = Tuple(Quat(spq))
 
 @inline function Base.convert{Q <: Quat}(::Type{Q}, spq::SPQuat)
     # Both the sign and norm of the Quat is automatically dealt with in its inner constructor
@@ -232,8 +232,6 @@ end
     alpha2 = (1 - q.w) / (1 + q.w) # <= 1 since q.w >= 0
     spq = SPQ(q.x * (alpha2 + 1)*0.5,  q.y * (alpha2 + 1)*0.5, q.z * (alpha2 + 1)*0.5)
 end
-
-@inline Base.convert(::Type{Tuple}, spq::SPQuat) = Tuple(Quat(spq))
 
 @inline Base.:*(spq::SPQuat, x::StaticVector) = Quat(spq) * x
 
