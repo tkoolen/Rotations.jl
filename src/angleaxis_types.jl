@@ -43,9 +43,10 @@ end
     AngleAxis{promote_type(promote_type(promote_type(Θ, X), Y), Z)}(θ, x, y, z, normalize)
 end
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
+# These functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))
 @inline Base.getindex(aa::AngleAxis, i::Int) = Quat(aa)[i]
+@inline Tuple(aa::AngleAxis) = Tuple(Quat(aa))
 
 @inline function Base.convert{R <: RotMatrix}(::Type{R}, aa::AngleAxis)
     # Rodrigues' rotation formula.
@@ -85,8 +86,6 @@ end
     theta =  2 * atan2(s, q.w)
     return s > 0 ? AA(theta, q.x / s, q.y / s, q.z / s) : AA(theta, one(theta), zero(theta), zero(theta))
 end
-
-@inline Base.convert(::Type{Tuple}, aa::AngleAxis) = Tuple(Quat(aa))
 
 # Using Rodrigues formula on an AngleAxis parameterization (assume unit axis length) to do the rotation
 # (implementation from: https://ceres-solver.googlesource.com/ceres-solver/+/1.10.0/include/ceres/rotation.h)
@@ -147,9 +146,10 @@ end
 # but this isn't quite what we mean when we have 4 inputs (not 9).
 @inline (::Type{RodriguesVec}){X,Y,Z}(x::X, y::Y, z::Z) = RodriguesVec{promote_type(promote_type(X, Y), Z)}(x, y, z)
 
-# These 2 functions are enough to satisfy the entire StaticArrays interface:
+# These functions are enough to satisfy the entire StaticArrays interface:
 @inline (::Type{RV}){RV <: RodriguesVec}(t::NTuple{9}) = RV(Quat(t))
 @inline Base.getindex(aa::RodriguesVec, i::Int) = Quat(aa)[i]
+@inline Tuple(rv::RodriguesVec) = Tuple(Quat(rv))
 
 # define its interaction with other angle representations
 @inline Base.convert{R <: RotMatrix}(::Type{R}, rv::RodriguesVec) = convert(R, AngleAxis(rv))
@@ -174,17 +174,12 @@ end
 
 function Base.convert{RV <: RodriguesVec}(::Type{RV}, q::Quat)
     s2 = q.x*q.x + q.y*q.y + q.z*q.z
-    if (s2 > 0)
-        cos_t2 = sqrt(s2)
-        theta = 2 * atan2(cos_t2, q.w)
-        sc = theta / cos_t2
-    else
-        sc = 2                 # N.B. the 2 "should" match the derivitive as cos_t2 -> 0
-    end
+    cos_t2 = sqrt(s2)
+    theta = 2 * atan2(cos_t2, q.w)
+    sc = ifelse(cos_t2 > 0, promote(theta / cos_t2, 2)...) # N.B. the 2 "should" match the derivitive as cos_t2 -> 0
     return RV(sc * q.x, sc * q.y, sc * q.z )
 end
 
-@inline Base.convert(::Type{Tuple}, rv::RodriguesVec) = Tuple(Quat(rv))
 
 function Base.:*{T1,T2}(rv::RodriguesVec{T1}, v::StaticVector{T2})
     if length(v) != 3
