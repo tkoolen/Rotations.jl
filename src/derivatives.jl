@@ -137,7 +137,7 @@ end
 #
 # Jacobian converting from a Quaternion to an SpQuat
 #
-function jacobian{T}(::Type{SPQuat},  q::Quat{T})
+function jacobian(::Type{SPQuat},  q::Quat{T}) where T
     den = (1 + q.w)
     dalpha2dQs = (-den - (1 - q.w)) / (den * den)
 
@@ -174,7 +174,7 @@ function jacobian(r::RotMatrix{3}, X::AbstractVector)
                                 Z    Z    X[1]  Z     Z     X[2]  Z     Z     X[3] ]
 end
 
-@inline function d_cross{T}(u::AbstractVector{T})
+@inline function d_cross(u::AbstractVector{T}) where T
     @assert length(u) === 3
     @inbounds return @SMatrix [ zero(T)  -u[3]      u[2]    ;
                                 u[3]      zero(T)  -u[1]    ;
