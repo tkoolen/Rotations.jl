@@ -24,7 +24,7 @@ for axis in [:X, :Y, :Z]
         @inline convert(::Type{R}, r::$RotType) where {R<:$RotType} = R(r)
         @inline convert(::Type{R}, r::R) where {R<:$RotType} = r
 
-        @inline (::Type{R}){R<:$RotType}(t::NTuple{9}) = error("Cannot construct a cardinal axis rotation from a matrix")
+        @inline (::Type{R})(t::NTuple{9}) where {R<:$RotType} = error("Cannot construct a cardinal axis rotation from a matrix")
 
         @inline Base.:*(r1::$RotType, r2::$RotType) = $RotType(r1.theta + r2.theta)
 
@@ -32,11 +32,11 @@ for axis in [:X, :Y, :Z]
 
         # define null rotations for convenience
         @inline eye(::Type{$RotType}) = $RotType(0.0)
-        @inline eye{T}(::Type{$RotType{T}}) = $RotType{T}(zero(T))
+        @inline eye(::Type{$RotType{T}}) where {T} = $RotType{T}(zero(T))
     end
 end
 
-function Base.rand{R <: Union{RotX,RotY,RotZ}}(::Type{R})
+function Base.rand(::Type{R}) where R <: Union{RotX,RotY,RotZ}
     T = eltype(R)
     if T == Any
         T = Float64
@@ -54,7 +54,7 @@ A 3×3 rotation matrix which represents a rotation by `theta` about the X axis.
 """
 RotX
 
-@inline function Base.getindex{T}(r::RotX{T}, i::Int)
+@inline function Base.getindex(r::RotX{T}, i::Int) where T
     T2 = Base.promote_op(sin, T)
     if i == 1
         one(T2)
@@ -75,7 +75,7 @@ RotX
     end
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotX{T}) where T
     T2 = Base.promote_op(sin, T)
     (one(T2),   zero(T2),     zero(T2),   # transposed representation
      zero(T2),  cos(r.theta), sin(r.theta),
@@ -103,7 +103,7 @@ A 3×3 rotation matrix which represents a rotation by `theta` about the Y axis.
 """
 RotY
 
-@inline function Base.getindex{T}(r::RotY{T}, i::Int)
+@inline function Base.getindex(r::RotY{T}, i::Int) where T
     T2 = Base.promote_op(sin, T)
     if i == 1
         cos(r.theta)
@@ -128,7 +128,7 @@ RotY
     end
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotY{T}) where T
     T2 = Base.promote_op(sin, T)
     (cos(r.theta), zero(T2), -sin(r.theta),   # transposed representation
      zero(T2),     one(T2),   zero(T2),
@@ -156,7 +156,7 @@ A 3×3 rotation matrix which represents a rotation by `theta` about the Z axis.
 """
 RotZ
 
-@inline function Base.getindex{T}(r::RotZ{T}, i::Int)
+@inline function Base.getindex(r::RotZ{T}, i::Int) where T
     T2 = Base.promote_op(sin, T)
     if i == 1
         cos(r.theta)
@@ -177,7 +177,7 @@ RotZ
     end
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZ{T}) where T
     T2 = Base.promote_op(sin, T)
     ( cos(r.theta), sin(r.theta), zero(T2),   # transposed representation
      -sin(r.theta), cos(r.theta), zero(T2),
@@ -225,11 +225,11 @@ for axis1 in [:X, :Y, :Z]
             @inline convert(::Type{R}, r::$RotType) where {R<:$RotType} = R(r)
             @inline convert(::Type{R}, r::R) where {R<:$RotType} = r
 
-            @inline function Base.getindex{T}(r::$RotType{T}, i::Int)
+            @inline function Base.getindex(r::$RotType{T}, i::Int) where T
                 convert(Tuple, r)[i] # Slow...
             end
 
-            @inline (::Type{R}){R<:$RotType}(t::NTuple{9}) = error("Cannot construct a two-axis rotation from a matrix")
+            @inline (::Type{R})(t::NTuple{9}) where {R<:$RotType} = error("Cannot construct a two-axis rotation from a matrix")
 
             # Composing single-axis rotations to obtain a two-axis rotation:
             @inline Base.:*(r1::$Rot1Type, r2::$Rot2Type) = $RotType(r1.theta, r2.theta)
@@ -242,12 +242,12 @@ for axis1 in [:X, :Y, :Z]
 
             # define null rotations for convenience
             @inline eye(::Type{$RotType}) = $RotType(0.0, 0.0)
-            @inline eye{T}(::Type{$RotType{T}}) = $RotType{T}(zero(T), zero(T))
+            @inline eye(::Type{$RotType{T}}) where {T} = $RotType{T}(zero(T), zero(T))
         end
     end
 end
 
-function Base.rand{R <: Union{RotXY,RotYZ,RotZX, RotXZ, RotYX, RotZY}}(::Type{R})
+function Base.rand(::Type{R}) where R <: Union{RotXY,RotYZ,RotZX, RotXZ, RotYX, RotZY}
     T = eltype(R)
     if T == Any
         T = Float64
@@ -269,7 +269,7 @@ followed by a rotation by `theta_x` about the X axis.
 """
 RotXY
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotXY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotXY{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -310,7 +310,7 @@ followed by a rotation by `theta_y` about the Y axis.
 """
 RotYX
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotYX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotYX{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -351,7 +351,7 @@ followed by a rotation by `theta_x` about the X axis.
 """
 RotXZ
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotXZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotXZ{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -392,7 +392,7 @@ followed by a rotation by `theta_z` about the Z axis.
 """
 RotZX
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZX{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -433,7 +433,7 @@ followed by a rotation by `theta_z` about the Z axis.
 """
 RotZY
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZY{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -474,7 +474,7 @@ followed by a rotation by `theta_y` about the Y axis.
 """
 RotYZ
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotYZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotYZ{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -538,7 +538,7 @@ for axis1 in [:X, :Y, :Z]
                 @inline convert(::Type{R}, r::$RotType) where {R<:$RotType} = R(r)
                 @inline convert(::Type{R}, r::R) where {R<:$RotType} = r
 
-                @inline function Base.getindex{T}(r::$RotType{T}, i::Int)
+                @inline function Base.getindex(r::$RotType{T}, i::Int) where T
                     convert(Tuple, r)[i] # Slow...
                 end
 
@@ -554,7 +554,7 @@ for axis1 in [:X, :Y, :Z]
 
                 # define null rotations for convenience
                 @inline eye(::Type{$RotType}) = $RotType(0.0, 0.0, 0.0)
-                @inline eye{T}(::Type{$RotType{T}}) = $RotType{T}(zero(T), zero(T), zero(T))
+                @inline eye(::Type{$RotType{T}}) where {T} = $RotType{T}(zero(T), zero(T), zero(T))
             end
         end
     end
@@ -579,7 +579,7 @@ by `theta1`.
 """
 RotXYX
 
-@inline function (::Type{Rot}){Rot <: RotXYX}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotXYX
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[2, 1], (-R[3, 1] + eps(t[1])) - eps(t[1]))  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
@@ -590,7 +590,7 @@ RotXYX
         atan2(- R[2, 3]*ct1 - R[3, 3]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotXYX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotXYX{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -636,7 +636,7 @@ by `theta1`.
 """
 RotXZX
 
-@inline function (::Type{Rot}){Rot <: RotXZX}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotXZX
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[3, 1], R[2, 1])
@@ -647,7 +647,7 @@ RotXZX
         atan2(R[3, 2]*ct1 - R[2, 2]*st1, R[3, 3]*ct1 - R[2, 3]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotXZX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotXZX{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -693,7 +693,7 @@ by `theta1`.
 """
 RotYXY
 
-@inline function (::Type{Rot}){Rot <: RotYXY}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotYXY
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[1, 2], R[3, 2])
@@ -704,7 +704,7 @@ RotYXY
         atan2(R[1, 3]*ct1 - R[3, 3]*st1, R[1, 1]*ct1 - R[3, 1]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotYXY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotYXY{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -750,7 +750,7 @@ by `theta1`.
 """
 RotYZY
 
-@inline function (::Type{Rot}){Rot <: RotYZY}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotYZY
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[3, 2], -R[1, 2])  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
@@ -761,7 +761,7 @@ RotYZY
         atan2(- R[3, 1]*ct1 - R[1, 1]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotYZY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotYZY{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -807,7 +807,7 @@ by `theta1`.
 """
 RotZXZ
 
-@inline function (::Type{Rot}){Rot <: RotZXZ}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotZXZ
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[1, 3], (-R[2, 3] + eps()) - eps())  # TODO: handle denormal numbers better, as atan2(0,0) != atan2(0,-0)
@@ -818,7 +818,7 @@ RotZXZ
         atan2(- R[1, 2]*ct1 - R[2, 2]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZXZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZXZ{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -864,7 +864,7 @@ by `theta1`.
 """
 RotZYZ
 
-@inline function (::Type{Rot}){Rot <: RotZYZ}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotZYZ
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[2, 3], R[1, 3])
@@ -875,7 +875,7 @@ RotZYZ
         atan2(R[2, 1]*ct1 - R[1, 1]*st1, R[2, 2]*ct1 - R[1, 2]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZYZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZYZ{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -929,9 +929,9 @@ note that positive pitch is heading in the negative Z axis).
 """
 RotXYZ
 
-@inline (::Type{Rot}){Rot<:RotXYZ}(; roll=0, pitch=0, yaw=0) = Rot(roll, pitch, yaw)
+@inline (::Type{Rot})(; roll=0, pitch=0, yaw=0) where {Rot<:RotXYZ} = Rot(roll, pitch, yaw)
 
-@inline function (::Type{Rot}){Rot <: RotXYZ}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotXYZ
     R = SMatrix{3,3}(t)
 
     t1 = atan2(-R[2, 3], R[3, 3])
@@ -942,7 +942,7 @@ RotXYZ
         atan2(R[2, 1]*ct1 + R[3, 1]*st1, R[2, 2]*ct1 + R[3, 2]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotXYZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotXYZ{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -993,9 +993,9 @@ note that positive pitch is heading in the negative Z axis).
 """
 RotZYX
 
-@inline (::Type{Rot}){Rot<:RotZYX}(; roll=0, pitch=0, yaw=0) = Rot(yaw, pitch, roll)
+@inline (::Type{Rot})(; roll=0, pitch=0, yaw=0) where {Rot<:RotZYX} = Rot(yaw, pitch, roll)
 
-@inline function (::Type{Rot}){Rot <: RotZYX}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotZYX
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[2, 1], R[1, 1])
@@ -1006,7 +1006,7 @@ RotZYX
         atan2(R[1, 3]*st1 - R[2, 3]*ct1, R[2, 2]*ct1 - R[1, 2]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZYX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZYX{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -1057,9 +1057,9 @@ note that positive pitch is heading in the negative Z axis).
 """
 RotXZY
 
-@inline (::Type{Rot}){Rot<:RotXZY}(; roll=0, pitch=0, yaw=0) = Rot(roll, yaw, pitch)
+@inline (::Type{Rot})(; roll=0, pitch=0, yaw=0) where {Rot<:RotXZY} = Rot(roll, yaw, pitch)
 
-@inline function (::Type{Rot}){Rot <: RotXZY}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotXZY
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[3, 2], R[2, 2])
@@ -1070,7 +1070,7 @@ RotXZY
         atan2(R[2, 1]*st1 - R[3, 1]*ct1, R[3, 3]*ct1 - R[2, 3]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotXZY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotXZY{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -1121,9 +1121,9 @@ note that positive pitch is heading in the negative Z axis).
 """
 RotYZX
 
-@inline (::Type{Rot}){Rot<:RotYZX}(; roll=0, pitch=0, yaw=0) = Rot(pitch, yaw, roll)
+@inline (::Type{Rot})(; roll=0, pitch=0, yaw=0) where {Rot<:RotYZX} = Rot(pitch, yaw, roll)
 
-@inline function (::Type{Rot}){Rot <: RotYZX}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotYZX
     R = SMatrix{3,3}(t)
 
     t1 = atan2(-R[3, 1], R[1, 1])
@@ -1134,7 +1134,7 @@ RotYZX
         atan2(R[3, 2]*ct1 + R[1, 2]*st1, R[3, 3]*ct1 + R[1, 3]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotYZX{T})
+@inline function Base.convert(::Type{Tuple}, r::RotYZX{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -1185,9 +1185,9 @@ note that positive pitch is heading in the negative Z axis).
 """
 RotYXZ
 
-@inline (::Type{Rot}){Rot<:RotYXZ}(; roll=0, pitch=0, yaw=0) = Rot(pitch, roll, yaw)
+@inline (::Type{Rot})(; roll=0, pitch=0, yaw=0) where {Rot<:RotYXZ} = Rot(pitch, roll, yaw)
 
-@inline function (::Type{Rot}){Rot <: RotYXZ}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotYXZ
     R = SMatrix{3,3}(t)
 
     t1 = atan2(R[1, 3], R[3, 3])
@@ -1198,7 +1198,7 @@ RotYXZ
         atan2(R[3, 2]*st1 - R[1, 2]*ct1, R[1, 1]*ct1 - R[3, 1]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotYXZ{T})
+@inline function Base.convert(::Type{Tuple}, r::RotYXZ{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)
@@ -1249,9 +1249,9 @@ note that positive pitch is heading in the negative Z axis).
 """
 RotZXY
 
-@inline (::Type{Rot}){Rot<:RotZXY}(; roll=0, pitch=0, yaw=0) = Rot(yaw, roll, pitch)
+@inline (::Type{Rot})(; roll=0, pitch=0, yaw=0) where {Rot<:RotZXY} = Rot(yaw, roll, pitch)
 
-@inline function (::Type{Rot}){Rot <: RotZXY}(t::NTuple{9})
+@inline function (::Type{Rot})(t::NTuple{9}) where Rot <: RotZXY
     R = SMatrix{3,3}(t)
 
     t1 = atan2(-R[1, 2], R[2, 2])
@@ -1262,7 +1262,7 @@ RotZXY
         atan2(R[1, 3]*ct1 + R[2, 3]*st1, R[1, 1]*ct1 + R[2, 1]*st1))
 end
 
-@inline function Base.convert{T}(::Type{Tuple}, r::RotZXY{T})
+@inline function Base.convert(::Type{Tuple}, r::RotZXY{T}) where T
     sinθ₁ = sin(r.theta1)
     cosθ₁ = cos(r.theta1)
     sinθ₂ = sin(r.theta2)

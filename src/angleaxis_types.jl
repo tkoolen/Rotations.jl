@@ -44,11 +44,11 @@ end
 end
 
 # These functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{AA}){AA <: AngleAxis}(t::NTuple{9}) = AA(Quat(t))
+@inline (::Type{AA})(t::NTuple{9}) where {AA <: AngleAxis} = AA(Quat(t))
 @inline Base.getindex(aa::AngleAxis, i::Int) = Quat(aa)[i]
 @inline Tuple(aa::AngleAxis) = Tuple(Quat(aa))
 
-@inline function Base.convert{R <: RotMatrix}(::Type{R}, aa::AngleAxis)
+@inline function Base.convert(::Type{R}, aa::AngleAxis) where R <: RotMatrix
     # Rodrigues' rotation formula.
     T = eltype(aa)
 
@@ -74,13 +74,13 @@ end
       c1xz + sy, c1yz - sx, one(T) - c1x2 - c1y2)
 end
 
-@inline function Base.convert{Q <: Quat}(::Type{Q}, aa::AngleAxis)
+@inline function Base.convert(::Type{Q}, aa::AngleAxis) where Q <: Quat
     qtheta = cos(aa.theta / 2)
     s = sin(aa.theta / 2) / sqrt(aa.axis_x * aa.axis_x + aa.axis_y * aa.axis_y + aa.axis_z * aa.axis_z)
     return Q(qtheta, s * aa.axis_x, s * aa.axis_y, s * aa.axis_z)
 end
 
-@inline function Base.convert{AA <: AngleAxis}(::Type{AA}, q::Quat)
+@inline function Base.convert(::Type{AA}, q::Quat) where AA <: AngleAxis
     # TODO: consider how to deal with derivative near theta = 0
     s = sqrt(q.x*q.x + q.y*q.y + q.z*q.z)
     theta =  2 * atan2(s, q.w)
@@ -119,7 +119,7 @@ end
 
 # define null rotations for convenience
 @inline eye(::Type{AngleAxis}) = AngleAxis(0.0, 1.0, 0.0, 0.0)
-@inline eye{T}(::Type{AngleAxis{T}}) = AngleAxis{T}(zero(T), one(T), zero(T), zero(T))
+@inline eye(::Type{AngleAxis{T}}) where {T} = AngleAxis{T}(zero(T), one(T), zero(T), zero(T))
 
 # accessors
 @inline rotation_angle(aa::AngleAxis) = aa.theta #  - floor((aa.theta+pi) / (2*pi)) * 2*pi
@@ -144,27 +144,27 @@ end
 
 # StaticArrays will take over *all* the constructors and put everything in a tuple...
 # but this isn't quite what we mean when we have 4 inputs (not 9).
-@inline (::Type{RodriguesVec}){X,Y,Z}(x::X, y::Y, z::Z) = RodriguesVec{promote_type(promote_type(X, Y), Z)}(x, y, z)
+@inline (::Type{RodriguesVec})(x::X, y::Y, z::Z) where {X,Y,Z} = RodriguesVec{promote_type(promote_type(X, Y), Z)}(x, y, z)
 
 # These functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{RV}){RV <: RodriguesVec}(t::NTuple{9}) = RV(Quat(t))
+@inline (::Type{RV})(t::NTuple{9}) where {RV <: RodriguesVec} = RV(Quat(t))
 @inline Base.getindex(aa::RodriguesVec, i::Int) = Quat(aa)[i]
 @inline Tuple(rv::RodriguesVec) = Tuple(Quat(rv))
 
 # define its interaction with other angle representations
-@inline Base.convert{R <: RotMatrix}(::Type{R}, rv::RodriguesVec) = convert(R, AngleAxis(rv))
+@inline Base.convert(::Type{R}, rv::RodriguesVec) where {R <: RotMatrix} = convert(R, AngleAxis(rv))
 
-function Base.convert{AA <: AngleAxis}(::Type{AA}, rv::RodriguesVec)
+function Base.convert(::Type{AA}, rv::RodriguesVec) where AA <: AngleAxis
     # TODO: consider how to deal with derivative near theta = 0. There should be a first-order expansion here.
     theta = rotation_angle(rv)
     return theta > 0 ? AA(theta, rv.sx / theta, rv.sy / theta, rv.sz / theta) : AA(zero(theta), one(theta), zero(theta), zero(theta))
 end
 
-function Base.convert{RV <: RodriguesVec}(::Type{RV}, aa::AngleAxis)
+function Base.convert(::Type{RV}, aa::AngleAxis) where RV <: RodriguesVec
     return RV(aa.theta * aa.axis_x, aa.theta * aa.axis_y, aa.theta * aa.axis_z)
 end
 
-function Base.convert{Q <: Quat}(::Type{Q}, rv::RodriguesVec)
+function Base.convert(::Type{Q}, rv::RodriguesVec) where Q <: Quat
     theta = rotation_angle(rv)
     qtheta = cos(theta / 2)
     #s = abs(1/2 * sinc((theta / 2) / pi))
@@ -172,7 +172,7 @@ function Base.convert{Q <: Quat}(::Type{Q}, rv::RodriguesVec)
     return Q(qtheta, s * rv.sx, s * rv.sy, s * rv.sz)
 end
 
-function Base.convert{RV <: RodriguesVec}(::Type{RV}, q::Quat)
+function Base.convert(::Type{RV}, q::Quat) where RV <: RodriguesVec
     s2 = q.x*q.x + q.y*q.y + q.z*q.z
     cos_t2 = sqrt(s2)
     theta = 2 * atan2(cos_t2, q.w)
@@ -181,7 +181,7 @@ function Base.convert{RV <: RodriguesVec}(::Type{RV}, q::Quat)
 end
 
 
-function Base.:*{T1,T2}(rv::RodriguesVec{T1}, v::StaticVector{T2})
+function Base.:*(rv::RodriguesVec{T1}, v::StaticVector{T2}) where {T1,T2}
     if length(v) != 3
         throw("Dimension mismatch: cannot rotate a vector of length $(length(v))")
     end
@@ -223,4 +223,4 @@ end
 
 # define null rotations for convenience
 @inline eye(::Type{RodriguesVec}) = RodriguesVec(0.0, 0.0, 0.0)
-@inline eye{T}(::Type{RodriguesVec{T}}) = RodriguesVec{T}(zero(T), zero(T), zero(T))
+@inline eye(::Type{RodriguesVec{T}}) where {T} = RodriguesVec{T}(zero(T), zero(T), zero(T))
