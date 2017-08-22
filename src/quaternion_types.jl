@@ -42,7 +42,7 @@ end
 @inline convert(::Type{Q}, q::Q) where {Q<:Quat} = q
 
 # These 3 functions are enough to satisfy the entire StaticArrays interface:
-function (::Type{Q}){Q<:Quat}(t::NTuple{9})
+function (::Type{Q})(t::NTuple{9}) where Q<:Quat
     q = Q(sqrt(abs(1  + t[1] + t[5] + t[9])) / 2,
                copysign(sqrt(abs(1 + t[1] - t[5] - t[9]))/2, t[6] - t[8]),
                copysign(sqrt(abs(1 - t[1] + t[5] - t[9]))/2, t[7] - t[3]),
@@ -160,7 +160,7 @@ function Base.inv(q::Quat)
 end
 
 @inline Base.eye(::Type{Quat}) = Quat(1.0, 0.0, 0.0, 0.0)
-@inline Base.eye{T}(::Type{Quat{T}}) = Quat{T}(one(T), zero(T), zero(T), zero(T))
+@inline Base.eye(::Type{Quat{T}}) where {T} = Quat{T}(one(T), zero(T), zero(T), zero(T))
 
 """
     rotation_between(from, to)
@@ -219,16 +219,16 @@ end
 @inline convert(::Type{SPQ}, spq::SPQ) where {SPQ<:SPQuat} = spq
 
 # These functions are enough to satisfy the entire StaticArrays interface:
-@inline (::Type{SPQ}){SPQ <: SPQuat}(t::NTuple{9}) = SPQ(Quat(t))
+@inline (::Type{SPQ})(t::NTuple{9}) where {SPQ <: SPQuat} = SPQ(Quat(t))
 @inline Base.getindex(spq::SPQuat, i::Int) = Quat(spq)[i]
 @inline Tuple(spq::SPQuat) = Tuple(Quat(spq))
 
-@inline function Base.convert{Q <: Quat}(::Type{Q}, spq::SPQuat)
+@inline function Base.convert(::Type{Q}, spq::SPQuat) where Q <: Quat
     # Both the sign and norm of the Quat is automatically dealt with in its inner constructor
     return Q(1 - (spq.x*spq.x + spq.y*spq.y + spq.z*spq.z), 2*spq.x, 2*spq.y, 2*spq.z)
 end
 
-@inline function Base.convert{SPQ <: SPQuat}(::Type{SPQ}, q::Quat)
+@inline function Base.convert(::Type{SPQ}, q::Quat) where SPQ <: SPQuat
     alpha2 = (1 - q.w) / (1 + q.w) # <= 1 since q.w >= 0
     spq = SPQ(q.x * (alpha2 + 1)*0.5,  q.y * (alpha2 + 1)*0.5, q.z * (alpha2 + 1)*0.5)
 end
@@ -244,7 +244,7 @@ end
 @inline Base.inv(spq::SPQuat) = SPQuat(-spq.x, -spq.y, -spq.z)
 
 @inline Base.eye(::Type{SPQuat}) = SPQuat(0.0, 0.0, 0.0)
-@inline Base.eye{T}(::Type{SPQuat{T}}) = SPQuat{T}(zero(T), zero(T), zero(T))
+@inline Base.eye(::Type{SPQuat{T}}) where {T} = SPQuat{T}(zero(T), zero(T), zero(T))
 
 # rotation properties
 @inline rotation_angle(spq::SPQuat) = rotation_angle(Quat(spq))

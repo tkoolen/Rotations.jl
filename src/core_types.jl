@@ -6,11 +6,11 @@ unitary (orthogonal) `N`×`N` matrices.
 """
 abstract type Rotation{N,T} <: StaticMatrix{N,N,T} end
 
-Base.@pure StaticArrays.Size{N}(::Type{Rotation{N}}) = Size(N,N)
-Base.@pure StaticArrays.Size{N,T}(::Type{Rotation{N,T}}) = Size(N,N)
-Base.@pure StaticArrays.Size{R<:Rotation}(::Type{R}) = Size(supertype(R))
+Base.@pure StaticArrays.Size(::Type{Rotation{N}}) where {N} = Size(N,N)
+Base.@pure StaticArrays.Size(::Type{Rotation{N,T}}) where {N,T} = Size(N,N)
+Base.@pure StaticArrays.Size(::Type{R}) where {R<:Rotation} = Size(supertype(R))
 Base.ctranspose(r::Rotation) = inv(r)
-Base.transpose{N,T<:Real}(r::Rotation{N,T}) = inv(r)
+Base.transpose(r::Rotation{N,T}) where {N,T<:Real} = inv(r)
 
 # Rotation angles and axes can be obtained by converting to the AngleAxis type
 rotation_angle(r::Rotation) = rotation_angle(AngleAxis(r))
@@ -19,10 +19,10 @@ rotation_axis(r::Rotation) = rotation_axis(AngleAxis(r))
 # Rotation matrices should be orthoginal/unitary. Only the operations we define,
 # like multiplication, will stay as Rotations, otherwise users will get an
 # SMatrix{3,3} (e.g. rot1 + rot2 -> SMatrix)
-Base.@pure StaticArrays.similar_type{R <: Rotation}(::Union{R,Type{R}}) = SMatrix{size(R)..., eltype(R), prod(size(R))}
-Base.@pure StaticArrays.similar_type{R <: Rotation, T}(::Union{R,Type{R}}, ::Type{T}) = SMatrix{size(R)..., T, prod(size(R))}
+Base.@pure StaticArrays.similar_type(::Union{R,Type{R}}) where {R <: Rotation} = SMatrix{size(R)..., eltype(R), prod(size(R))}
+Base.@pure StaticArrays.similar_type(::Union{R,Type{R}}, ::Type{T}) where {R <: Rotation, T} = SMatrix{size(R)..., T, prod(size(R))}
 
-function Base.rand{R <: Rotation{2}}(::Type{R})
+function Base.rand(::Type{R}) where R <: Rotation{2}
     T = eltype(R)
     if T == Any
         T = Float64
@@ -34,7 +34,7 @@ end
 # A random rotation can be obtained easily with unit quaternions
 # The unit sphere in R⁴ parameterizes quaternion rotations according to the
 # Haar measure of SO(3) - see e.g. http://math.stackexchange.com/questions/184086/uniform-distributions-on-the-space-of-rotations-in-3d
-function Base.rand{R <: Rotation{3}}(::Type{R})
+function Base.rand(::Type{R}) where R <: Rotation{3}
     T = eltype(R)
     if T == Any
         T = Float64
@@ -47,7 +47,7 @@ end
 # Useful for converting arrays of rotations to another rotation eltype, for instance.
 # Only works because parameters of all the rotations are of a similar form
 # Would need to be more sophisticated if we have arbitrary dimensions, etc
-@inline function Base.promote_op{R1 <: Rotation, R2 <: Rotation}(::Type{R1}, ::Type{R2})
+@inline function Base.promote_op(::Type{R1}, ::Type{R2}) where {R1 <: Rotation, R2 <: Rotation}
     size(R1) == size(R2) || throw(DimensionMismatch("cannot promote rotations of $(size(R1)[1]) and $(size(R2)[1]) dimensions"))
     if isleaftype(R1)
         return R1
@@ -85,26 +85,26 @@ for N = 2:3
     L = N*N
     RotMatrixN = Symbol(:RotMatrix, N)
     @eval begin
-        @inline (::Type{RotMatrix})(t::NTuple{$L})  = RotMatrix(SMatrix{$N,$N}(t))
-        @inline (::Type{RotMatrix{$N}})(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N}(t))
-        @inline (::Type{RotMatrix{$N,T}}){T}(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N,T}(t))
-        @inline (::Type{RotMatrix{$N,T,$L}}){T}(t::NTuple{$L}) = RotMatrix(SMatrix{$N,$N,T}(t))
+        @inline RotMatrix(t::NTuple{$L})  = RotMatrix(SMatrix{$N,$N}(t))
+        @inline RotMatrix(t::NTuple{$L}) where {$N} = RotMatrix(SMatrix{$N,$N}(t))
+        @inline RotMatrix{$N,T}(t::NTuple{$L}) where {T} = RotMatrix(SMatrix{$N,$N,T}(t))
+        @inline RotMatrix{$N,T,$L}(t::NTuple{$L}) where {T} = RotMatrix(SMatrix{$N,$N,T}(t))
         const $RotMatrixN{T} = RotMatrix{$N, T, $L}
     end
 end
 Base.@propagate_inbounds Base.getindex(r::RotMatrix, i::Int) = r.mat[i]
 @inline Tuple(r::RotMatrix) = Tuple(r.mat)
 
-@inline (::Type{RotMatrix})(θ::Real) = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
-@inline (::Type{RotMatrix{2}})(θ::Real)      = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
-@inline (::Type{RotMatrix{2,T}}){T}(θ::Real) = RotMatrix(@SMatrix T[cos(θ) -sin(θ); sin(θ) cos(θ)])
+@inline RotMatrix(θ::Real) = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
+@inline RotMatrix(θ::Real) where {2}      = RotMatrix(@SMatrix [cos(θ) -sin(θ); sin(θ) cos(θ)])
+@inline RotMatrix{2,T}(θ::Real) where {T} = RotMatrix(@SMatrix T[cos(θ) -sin(θ); sin(θ) cos(θ)])
 
 # A rotation is more-or-less defined as being an orthogonal (or unitary) matrix
 Base.inv(r::RotMatrix) = RotMatrix(r.mat')
 
 # A useful constructor for identity rotation (eye is already provided by StaticArrays, but needs an eltype)
-@inline Base.eye{N}(::Type{RotMatrix{N}}) = RotMatrix((eye(SMatrix{N,N,Float64})))
-@inline Base.eye{N,T}(::Type{RotMatrix{N,T}}) = RotMatrix((eye(SMatrix{N,N,T})))
+@inline Base.eye(::Type{RotMatrix{N}}) where {N} = RotMatrix((eye(SMatrix{N,N,Float64})))
+@inline Base.eye(::Type{RotMatrix{N,T}}) where {N,T} = RotMatrix((eye(SMatrix{N,N,T})))
 
 # By default, composition of rotations will go through RotMatrix, unless overridden
 @inline *(r1::Rotation, r2::Rotation) = RotMatrix(r1) * RotMatrix(r2)
@@ -123,7 +123,7 @@ Check whether `r` is a 3×3 rotation matrix, where `r * r'` is within `tol` of
 the identity matrix (using the Frobenius norm). (`tol` defaults to
 `1000 * eps(eltype(r))`.)
 """
-function isrotation{T}(r::AbstractMatrix{T}, tol::Real = 1000 * eps(eltype(T)))
+function isrotation(r::AbstractMatrix{T}, tol::Real = 1000 * eps(eltype(T))) where T
     if size(r) == (2,2)
         # Transpose is overloaded for many of our types, so we do it explicitly:
         r_trans = @SMatrix [conj(r[1,1])  conj(r[2,1]);
@@ -185,6 +185,6 @@ function Base.showarray(io::IO, X::Rotation, repr::Bool = true; header = true)
 end
 
 # Removes module name from output, to match other types
-function Base.summary{T,N}(r::Rotation{N,T})
+function Base.summary(r::Rotation{N,T}) where {T,N}
     "$N×$N $(typeof(r).name.name){$(eltype(r))}"
 end
