@@ -23,7 +23,7 @@ struct Quat{T} <: Rotation{3,T}
 
     @inline function Quat{T}(w, x, y, z, normalize::Bool = true) where {T}
         if normalize
-            norm = copysign(sqrt(w*w + x*x + y*y + z*z), w)
+            norm = sqrt(w*w + x*x + y*y + z*z)
             new(w/norm, x/norm, y/norm, z/norm)
         else
             new(w, x, y, z)
